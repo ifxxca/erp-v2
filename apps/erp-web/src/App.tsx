@@ -334,7 +334,7 @@ function App() {
       </AppShell.Main>
 
       <Suspense fallback={null}>
-        {selectedUser && organization && activeCompany && <IdentityDrawer user={selectedUser} organization={organization} company={activeCompany} token={token} canManageStatus={canManageStatus} onClose={() => setSelectedUser(null)} onChanged={async (message) => { showSuccess(message); await loadUsers(page) }} onError={handleError} />}
+        {selectedUser && organization && activeCompany && currentUser && <IdentityDrawer user={selectedUser} currentUserId={currentUser.id} organization={organization} company={activeCompany} token={token} canManageStatus={canManageStatus} onClose={() => setSelectedUser(null)} onChanged={async (message) => { showSuccess(message); await loadUsers(page) }} onError={handleError} onMessage={showSuccess} />}
         {activeCompany && organization && inviteOpened && <InvitationModal opened token={token} company={activeCompany} organization={organization} onClose={() => setInviteOpened(false)} onCompleted={async (message) => { showSuccess(message); await loadUsers(1) }} onError={handleError} />}
       </Suspense>
     </AppShell>

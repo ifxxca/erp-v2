@@ -35,6 +35,7 @@ export type Company = {
     can_view_users: boolean
     can_invite_users: boolean
     can_manage_employment: boolean
+    can_assign_access: boolean
     can_request_access: boolean
     can_approve_access: boolean
     can_revoke_access: boolean
@@ -147,6 +148,37 @@ export type RoleCatalog = {
     permissions: RoleCatalogPermission[]
   }
   meta: { can_manage: boolean }
+}
+
+export type StandardAccessRole = {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  assignment_scope: 'company' | 'department' | 'location'
+}
+
+export type StandardRoleAssignment = {
+  id: string
+  role: StandardAccessRole
+  company_id: string
+  department: { id: string; code: string; name: string } | null
+  location: { id: string; code: string; name: string } | null
+  valid_from: string
+  valid_until: string | null
+  assigned_by: { id: string; name: string }
+  revoked_at: string | null
+  revoked_by: { id: string; name: string } | null
+  revocation_reason: string | null
+  status: 'scheduled' | 'active' | 'expired' | 'revoked'
+  can_revoke: boolean
+}
+
+export type StandardAccessCatalog = {
+  data: {
+    roles: StandardAccessRole[]
+    assignments: StandardRoleAssignment[]
+  }
 }
 
 export type AccessCatalogUser = {

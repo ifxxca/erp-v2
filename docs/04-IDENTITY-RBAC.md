@@ -55,7 +55,7 @@ RBAC menjawab "boleh melakukan aksi apa". Domain policy tetap menjawab "boleh me
 - Role system dan permission catalog adalah baseline release-managed: UI menampilkannya sebagai read-only dan perubahan dilakukan melalui migration/seeder yang direview.
 - Runtime administration hanya dapat membuat custom role dengan scope `company`, `department`, atau `location`; custom role tidak dapat menerima permission global-only.
 - Perubahan profil dan permission custom role membutuhkan permission global `identity.role.manage`, recent MFA, alasan perubahan, dan audit append-only.
-- Custom role dengan assignment atau access-request history tidak dapat dihapus. Classification scope/privileged tidak dapat berubah selama ada assignment aktif atau request pending.
+- Custom role dengan assignment atau access-request history tidak dapat dihapus. Classification scope/privileged tidak dapat berubah selama ada assignment current/scheduled yang belum revoked atau request pending.
 - UI menu tidak menjadi pengaman. API selalu melakukan authorization sendiri.
 
 ### Role assignment
@@ -70,6 +70,8 @@ Assignment menghubungkan user dan role, dengan scope opsional:
 | wajib | terisi | terisi | harus cocok dengan company, department, dan location |
 
 Setiap assignment memiliki masa berlaku dan aktor pemberi akses. Assignment seluruh-company untuk role berisiko tinggi wajib membutuhkan approval atau proses break-glass. Hanya role teknis platform tertentu yang boleh memiliki scope lintas-company.
+
+Assignment standard (`is_privileged = false`) dapat diberikan langsung oleh pemegang `identity.access.assign`, dengan recent MFA, alasan, dan audit. API menolak self-assignment/self-revocation, role global atau privileged, periode yang overlap pada scope identik, serta periode yang tidak sepenuhnya ditutupi company/department/location membership target. Assignment privileged tetap hanya dibuat melalui maker-checker request.
 
 ## Role awal yang direkomendasikan
 
@@ -96,7 +98,7 @@ Tidak ada role `super_admin` yang secara implisit melewati semua policy. Aksi te
 
 | Module | Permission contoh |
 |---|---|
-| Identity | `identity.user.view`, `identity.user.manage`, `identity.user.status.manage` (global-only), `identity.role.view` (global-only), `identity.role.manage` (global-only), `identity.employment.manage`, `identity.access.request`, `.approve`, `.revoke` |
+| Identity | `identity.user.view`, `identity.user.manage`, `identity.user.status.manage` (global-only), `identity.role.view` (global-only), `identity.role.manage` (global-only), `identity.employment.manage`, `identity.access.assign`, `.request`, `.approve`, `.revoke` |
 | Procurement | `procurement.purchase-request.create`, `.view`, `.submit`, `.approve`; `procurement.purchase-order.issue` |
 | Finance | `finance.payment-schedule.view`, `.manage`; `finance.payment.post`, `.reverse` |
 | Inventory | `inventory.receipt.create`, `.confirm`; `inventory.movement.create`; `inventory.stock-count.approve` |

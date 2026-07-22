@@ -35,6 +35,8 @@ API base URL: `http://localhost:8000/api/v1`.
 - `GET /identity/companies/{company}/organization` returns the active department and location catalog.
 - `GET /identity/companies/{company}/users` and `GET /identity/companies/{company}/users/{user}` expose a company-scoped identity directory and history.
 - `PUT /identity/companies/{company}/users/{user}/organization-memberships` requires `identity.employment.manage`; it schedules effective-dated organization changes without overwriting history.
+- `GET|POST /identity/companies/{company}/users/{user}/role-assignments` requires `identity.access.assign`; it returns the standard-role catalog/history or creates a direct non-privileged assignment after recent MFA.
+- `POST /identity/companies/{company}/users/{user}/role-assignments/{assignment}/revoke` revokes only a direct standard assignment after recent MFA.
 - `PATCH /identity/users/{user}/status` requires global `identity.user.status.manage` plus recent MFA; suspend/disable revoke all device sessions and mobile refresh families.
 - `GET /identity/roles` requires global `identity.role.view` and returns the role/permission catalog plus server-derived management capability.
 - `POST /identity/roles`, `PATCH|DELETE /identity/roles/{role}`, and `PUT /identity/roles/{role}/permissions` require global `identity.role.manage`, recent MFA, and an audit reason.
@@ -51,6 +53,8 @@ API base URL: `http://localhost:8000/api/v1`.
 Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. Privileged assignments cannot be approved until the target user has active MFA.
 
 Every role declares an `assignment_scope`. Company access requests reject global-only roles and validate that company, department, or location scope matches the role policy and the target's active organization membership.
+
+Direct standard access is deliberately separate from the privileged maker-checker flow. It rejects privileged/global roles, self-assignment and self-revocation, overlapping periods, and any assignment period not fully covered by the target's company and organization memberships. Every mutation records an actor, reason, and append-only audit event.
 
 Permission codes and system-role mappings are release-managed baselines. Runtime administration may create and maintain only non-global custom roles; global-only permissions cannot be attached to them, and roles with assignment or request history cannot be deleted.
 

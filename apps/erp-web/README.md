@@ -16,6 +16,8 @@ The first implemented workspace is Identity Administration:
 - destructive-action confirmation and responsive desktop/mobile layouts.
 - company-scoped employee invitation with department, primary department, location,
   employee number, and effective-date assignment.
+- capability-gated Access tab in the identity drawer for direct standard-role assignment,
+  effective dates, organization scope, assignment history, and revocation.
 
 The Privileged Access Review workspace adds:
 

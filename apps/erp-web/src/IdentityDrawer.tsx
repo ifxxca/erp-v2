@@ -12,24 +12,28 @@ import {
   MultiSelect,
   Select,
   Stack,
+  Tabs,
   Text,
   Textarea,
   TextInput,
   Title,
 } from '@mantine/core'
-import { IconBuilding, IconCalendarEvent, IconShieldExclamation } from '@tabler/icons-react'
+import { IconBuilding, IconCalendarEvent, IconKey, IconShieldExclamation, IconUser } from '@tabler/icons-react'
 import { apiRequest, type Company, type IdentityUser, type Organization } from './api'
 import { currentDepartments } from './identity'
+import StandardAccessPanel from './StandardAccessPanel'
 
 type Props = {
   user: IdentityUser
   organization: Organization
   company: Company
   token: string
+  currentUserId: string
   canManageStatus: boolean
   onClose: () => void
   onChanged: (message: string) => Promise<void>
   onError: (error: unknown) => void
+  onMessage: (message: string) => void
 }
 
 const tomorrow = () => {
@@ -49,7 +53,7 @@ function currentLocations(user: IdentityUser) {
   return user.location_memberships.filter((item) => item.valid_from <= today && (!item.valid_until || item.valid_until >= today))
 }
 
-export default function IdentityDrawer({ user, organization, company, token, canManageStatus, onClose, onChanged, onError }: Props) {
+export default function IdentityDrawer({ user, organization, company, token, currentUserId, canManageStatus, onClose, onChanged, onError, onMessage }: Props) {
   const activeDepartments = useMemo(() => currentDepartments(user), [user])
   const activeLocations = useMemo(() => currentLocations(user), [user])
   const [departmentIds, setDepartmentIds] = useState(() => activeDepartments.map((item) => item.department.id))
@@ -102,7 +106,14 @@ export default function IdentityDrawer({ user, organization, company, token, can
         <div><Title order={3}>{user.name}</Title><Text size="sm" c="dimmed">{user.email}</Text></div>
       </Group>
     }>
-      <Stack gap="xl">
+      <Tabs defaultValue="profile">
+        <Tabs.List grow mb="xl">
+          <Tabs.Tab value="profile" leftSection={<IconUser size={16} />}>Profile & organization</Tabs.Tab>
+          {company.capabilities.can_assign_access && <Tabs.Tab value="access" leftSection={<IconKey size={16} />}>Access</Tabs.Tab>}
+        </Tabs.List>
+
+        <Tabs.Panel value="profile">
+          <Stack gap="xl">
         <Group justify="space-between"><Badge color={badgeColor(user.status)} variant="light">{user.status}</Badge><Text size="xs" c="dimmed">Last login: {user.last_login_at ? formatDate(user.last_login_at) : 'Belum pernah'}</Text></Group>
 
         <section>
@@ -159,7 +170,13 @@ export default function IdentityDrawer({ user, organization, company, token, can
             </form>
           </section>
         </>}
-      </Stack>
+          </Stack>
+        </Tabs.Panel>
+
+        {company.capabilities.can_assign_access && <Tabs.Panel value="access">
+          <StandardAccessPanel user={user} currentUserId={currentUserId} organization={organization} company={company} token={token} onError={onError} onMessage={onMessage} />
+        </Tabs.Panel>}
+      </Tabs>
     </Drawer>
   )
 }

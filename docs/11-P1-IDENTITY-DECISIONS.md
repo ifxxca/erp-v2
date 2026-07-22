@@ -12,6 +12,11 @@ Decision date: 2026-07-22
 | Q-102 | User boleh aktif di beberapa company, department, dan location | Assignment eksplisit per scope; tidak ada inheritance otomatis |
 | Q-103 | Session dibedakan per surface dan MFA/step-up wajib untuk akses berisiko | Short access lifetime, rotating refresh token, central revocation |
 | Q-104 | Roster employment yang dipelihara HR di V2 menjadi source of truth sampai ada HRIS | HR memiliki employment status; Identity service menegakkan disable/revoke |
+| Q-105 | Standard role diberikan langsung oleh Management Access Owner; privileged role tetap maker-checker | Recent MFA, no self-action, membership-period coverage, overlap denial, audit |
+
+## Standard access governance
+
+Management Access Owner dapat memberikan dan mencabut role non-privileged pada company yang dikelolanya melalui `identity.access.assign`. Assignment harus mengikuti `assignment_scope` role dan seluruh periodenya harus tercakup oleh employment serta organization membership target. Role global/privileged, self-assignment, self-revocation, dan periode overlap pada scope identik ditolak. Aksi selalu menyimpan actor, alasan, effective dates, dan audit append-only.
 
 ## Privileged access governance
 

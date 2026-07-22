@@ -158,6 +158,30 @@ class RoleAdministrationApiTest extends TestCase
             ->assertJsonPath('code', 'ROLE_CLASSIFICATION_IN_USE');
     }
 
+    public function test_classification_change_is_blocked_while_role_is_scheduled(): void
+    {
+        $role = $this->customRole();
+        $target = User::factory()->create();
+        UserRoleAssignment::query()->create([
+            'user_id' => $target->id,
+            'role_id' => $role->id,
+            'valid_from' => now()->addWeek(),
+            'valid_until' => now()->addMonth(),
+            'assigned_by' => $target->id,
+        ]);
+
+        $this->withToken($this->adminToken(['identity.role.manage'], mfaVerified: true))
+            ->patchJson("/api/v1/identity/roles/{$role->id}", [
+                'name' => $role->name,
+                'description' => null,
+                'is_privileged' => true,
+                'assignment_scope' => 'department',
+                'reason' => 'Attempt classification change while assignment is scheduled.',
+            ])
+            ->assertConflict()
+            ->assertJsonPath('code', 'ROLE_CLASSIFICATION_IN_USE');
+    }
+
     public function test_permission_sync_records_added_and_removed_permissions(): void
     {
         $view = $this->permission('fleet.vehicle.view');

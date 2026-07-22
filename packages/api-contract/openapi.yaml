@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.9.0
+  version: 0.10.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -784,6 +784,95 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/users/{userId}/role-assignments:
+    get:
+      operationId: listStandardRoleAssignments
+      summary: Return the standard-access catalog and direct assignment history for one identity.
+      description: Requires identity.access.assign in companyId. Privileged and global roles are excluded.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Standard roles and direct assignment history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardAccessCatalogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: User is not employed by the requested company.
+    post:
+      operationId: createStandardRoleAssignment
+      summary: Assign a standard role directly within a covered organization scope.
+      description: Requires identity.access.assign and recent MFA. Self-assignment, privileged roles, global roles, overlapping periods, and periods outside the target's memberships are rejected.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStandardRoleAssignmentRequest"
+      responses:
+        "201":
+          description: Standard role assigned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardRoleAssignmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: User is not employed by the requested company.
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/users/{userId}/role-assignments/{assignmentId}/revoke:
+    post:
+      operationId: revokeStandardRoleAssignment
+      summary: Revoke a direct standard role assignment.
+      description: Requires identity.access.assign and recent MFA. Privileged workflow assignments and self-revocation are rejected.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/AssignmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeStandardRoleAssignmentRequest"
+      responses:
+        "200":
+          description: Standard role assignment revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardRoleAssignmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Direct assignment was not found for this company and user.
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
   /identity/companies/{companyId}/access-requests:
     get:
       operationId: listPrivilegedAccessRequests
@@ -1421,6 +1510,7 @@ components:
         - can_view_users
         - can_invite_users
         - can_manage_employment
+        - can_assign_access
         - can_request_access
         - can_approve_access
         - can_revoke_access
@@ -1430,6 +1520,8 @@ components:
         can_invite_users:
           type: boolean
         can_manage_employment:
+          type: boolean
+        can_assign_access:
           type: boolean
         can_request_access:
           type: boolean
@@ -1942,6 +2034,130 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/AccessCatalogRole"
+    StandardAccessRole:
+      allOf:
+        - $ref: "#/components/schemas/RoleSummary"
+        - type: object
+          required: [description, assignment_scope]
+          properties:
+            description:
+              type: [string, "null"]
+            assignment_scope:
+              type: string
+              enum: [company, department, location]
+    StandardRoleAssignment:
+      type: object
+      required:
+        - id
+        - role
+        - company_id
+        - department
+        - location
+        - valid_from
+        - valid_until
+        - assigned_by
+        - revoked_at
+        - revoked_by
+        - revocation_reason
+        - status
+        - can_revoke
+      properties:
+        id:
+          type: string
+        role:
+          allOf:
+            - $ref: "#/components/schemas/RoleSummary"
+            - type: object
+              required: [assignment_scope, is_privileged]
+              properties:
+                assignment_scope:
+                  $ref: "#/components/schemas/RoleAssignmentScope"
+                is_privileged:
+                  type: boolean
+                  const: false
+        company_id:
+          type: string
+        department:
+          oneOf:
+            - $ref: "#/components/schemas/DepartmentSummary"
+            - type: "null"
+        location:
+          oneOf:
+            - $ref: "#/components/schemas/LocationSummary"
+            - type: "null"
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: [string, "null"]
+          format: date-time
+        assigned_by:
+          $ref: "#/components/schemas/UserSummary"
+        revoked_at:
+          type: [string, "null"]
+          format: date-time
+        revoked_by:
+          oneOf:
+            - $ref: "#/components/schemas/UserSummary"
+            - type: "null"
+        revocation_reason:
+          type: [string, "null"]
+        status:
+          type: string
+          enum: [scheduled, active, expired, revoked]
+        can_revoke:
+          type: boolean
+    StandardAccessCatalogResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [roles, assignments]
+          properties:
+            roles:
+              type: array
+              items:
+                $ref: "#/components/schemas/StandardAccessRole"
+            assignments:
+              type: array
+              items:
+                $ref: "#/components/schemas/StandardRoleAssignment"
+    CreateStandardRoleAssignmentRequest:
+      type: object
+      required: [role_id, valid_from, reason]
+      properties:
+        role_id:
+          type: string
+          description: Must identify a non-privileged company, department, or location role.
+        department_id:
+          type: [string, "null"]
+        location_id:
+          type: [string, "null"]
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: [string, "null"]
+          format: date
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 2000
+    RevokeStandardRoleAssignmentRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 2000
+    StandardRoleAssignmentResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/StandardRoleAssignment"
     PrivilegedRoleAssignment:
       type: object
       required:

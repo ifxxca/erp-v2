@@ -54,10 +54,13 @@ class RoleAdministrationService
             $this->assertCustomRole($role);
             $classificationChanged = $role->is_privileged !== (bool) $data['is_privileged']
                 || $role->assignment_scope !== $data['assignment_scope'];
-            if ($classificationChanged && ($role->assignments()->active()->exists()
+            if ($classificationChanged && ($role->assignments()
+                ->whereNull('revoked_at')
+                ->where(fn ($query) => $query->whereNull('valid_until')->orWhere('valid_until', '>', now()))
+                ->exists()
                 || $role->accessRequests()->where('status', 'pending')->exists())) {
                 throw new AccessGovernanceException(
-                    'Role classification cannot change while active assignments or pending requests exist.',
+                    'Role classification cannot change while current or scheduled assignments or pending requests exist.',
                     'ROLE_CLASSIFICATION_IN_USE',
                     Response::HTTP_CONFLICT,
                 );

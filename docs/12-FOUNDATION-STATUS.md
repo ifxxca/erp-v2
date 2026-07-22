@@ -14,6 +14,7 @@ Status date: 2026-07-22
 - Ninety-day maximum privileged expiry, duplicate protection, scoped notification, and recent-MFA enforcement point.
 - Explicit role assignment-scope policy preventing global roles from entering company-scoped access requests.
 - Capability-scoped access catalog, maker history, approval queue, and active privileged-assignment API.
+- Scoped direct standard-role assignment and revocation with recent MFA, membership-period coverage, self-action denial, overlap protection, and append-only audit.
 - TOTP enrollment, encrypted secret storage, confirmation, per-token MFA challenge, and replay prevention.
 - Hashed single-use recovery codes, regeneration, optional-MFA disable, and mandatory MFA for active privileged assignments.
 - Non-enumerating password recovery with hashed, expiring, single-use reset tokens and device revocation after reset.
@@ -34,6 +35,7 @@ Status date: 2026-07-22
 - Company-scoped invitation UI with validated organization assignment and capability-gated access.
 - MFA and device-session self-service workspace covering TOTP enrollment, recovery codes, step-up verification, optional disable, session inventory, and scoped/bulk revocation.
 - Mantine Roles & Permissions workspace covering catalog search, system-role inspection, custom-role creation/profile editing, permission mapping, and guarded deletion.
+- Mantine identity Access tab covering standard-role catalog, scoped effective-dated assignment, history, and guarded revocation.
 - npm workspace plus shared API-contract and web-UI packages.
 - PostgreSQL 18, Redis 8, MinIO, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
@@ -41,13 +43,14 @@ Status date: 2026-07-22
 
 ## Verified locally
 
-- API test suite: 71 tests, 386 assertions.
+- API test suite: 80 tests, 428 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
 - Generic credential failures, invitation replay denial, scoped invitation authorization, and termination revocation behavior.
 - Privileged self-approval denial, MFA gate, maximum expiry, duplicate request, rejection, wrong-company denial, and immediate token revocation.
 - Access catalog isolation, global-role exclusion, role-scope validation, maker-history privacy, capability projection, and active-assignment listing.
+- Standard-access catalog isolation, privileged/global-role exclusion, company/department/location coverage, overlap denial, self-action/MFA gates, history, revocation, and scheduled-role classification protection.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.

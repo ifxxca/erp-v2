@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\PasswordRecoveryController;
 use App\Http\Controllers\Api\V1\PrivilegedAccessController;
 use App\Http\Controllers\Api\V1\RoleAdministrationController;
 use App\Http\Controllers\Api\V1\SessionController;
+use App\Http\Controllers\Api\V1\StandardAccessController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -78,6 +79,12 @@ Route::prefix('v1')->group(function (): void {
                     ->middleware('permission.scoped:identity.user.view');
                 Route::put('/users/{user}/organization-memberships', [OrganizationMembershipController::class, 'update'])
                     ->middleware('permission.scoped:identity.employment.manage');
+                Route::get('/users/{user}/role-assignments', [StandardAccessController::class, 'index'])
+                    ->middleware('permission.scoped:identity.access.assign');
+                Route::post('/users/{user}/role-assignments', [StandardAccessController::class, 'store'])
+                    ->middleware(['permission.scoped:identity.access.assign', 'mfa.recent']);
+                Route::post('/users/{user}/role-assignments/{assignment}/revoke', [StandardAccessController::class, 'revoke'])
+                    ->middleware(['permission.scoped:identity.access.assign', 'mfa.recent']);
                 Route::get('/access-requests', [PrivilegedAccessController::class, 'index'])
                     ->middleware('permission.scoped:identity.access.approve');
                 Route::get('/access-requests/mine', [PrivilegedAccessController::class, 'mine'])

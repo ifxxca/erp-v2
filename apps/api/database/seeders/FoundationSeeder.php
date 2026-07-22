@@ -118,7 +118,7 @@ class FoundationSeeder extends Seeder
 
         Role::query()->where('code', 'management-access-owner')->firstOrFail()
             ->permissions()->syncWithoutDetaching($permissions
-            ->only(['identity.user.view', 'identity.access.approve', 'identity.access.revoke', 'audit.log.view'])
+            ->only(['identity.user.view', 'identity.access.assign', 'identity.access.approve', 'identity.access.revoke', 'audit.log.view'])
             ->pluck('id'));
 
         Role::query()->where('code', 'fleet-manager')->firstOrFail()
