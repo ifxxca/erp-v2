@@ -31,6 +31,10 @@ services:
       AWS_BUCKET: rajawali-v2-local
       AWS_ENDPOINT: http://minio:9000
       AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      FILES_SCAN_DRIVER: clamav
+      FILES_ALLOW_UNSCANNED: "false"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
@@ -40,6 +44,53 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_started
+  worker:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/api.Dockerfile
+    working_dir: /app
+    command: php artisan queue:work --tries=5 --timeout=120
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-rajawali_v2}
+      DB_USERNAME: ${POSTGRES_USER:-rajawali}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-rajawali_local_only}
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      FILESYSTEM_DISK: s3
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-rajawali}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-rajawali_local_only}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_BUCKET: rajawali-v2-local
+      AWS_ENDPOINT: http://minio:9000
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      FILES_SCAN_DRIVER: clamav
+      FILES_ALLOW_UNSCANNED: "false"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+    volumes:
+      - ../apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_started
   postgres:
     image: postgres:18-alpine
     environment:
@@ -81,6 +132,24 @@ services:
     volumes:
       - minio-data:/data
 
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 1; done; mc mb --ignore-existing local/rajawali-v2-local
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rajawali}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-rajawali_local_only}
+    depends_on:
+      - minio
+
+  clamav:
+    image: clamav/clamav:1.4.3
+    ports:
+      - "${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - clamav-data:/var/lib/clamav
+
   mailpit:
     image: axllent/mailpit:v1.27
     ports:
@@ -91,3 +160,4 @@ volumes:
   postgres-data:
   redis-data:
   minio-data:
+  clamav-data:

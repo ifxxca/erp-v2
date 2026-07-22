@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.11.0
+  version: 0.12.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -1169,6 +1169,170 @@ paths:
           $ref: "#/components/responses/Unauthenticated"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /companies/{companyId}/files:
+    post:
+      operationId: initiateFileUpload
+      summary: Reserve private object metadata before uploading its binary.
+      description: Requires file.asset.create in companyId. The returned content endpoint deliberately does not accept Idempotency-Key; retries reuse the reservation and checksum.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitiateFileRequest"
+      responses:
+        "201":
+          description: Private upload reservation and multipart upload instruction.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileInitiatedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /companies/{companyId}/files/{fileId}/content:
+    post:
+      operationId: uploadFileContent
+      summary: Upload the reserved binary for server-side structural validation.
+      description: Requires reservation ownership and file.asset.create. Idempotency-Key is not supported for multipart binary payloads.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/FileId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Binary accepted after size, SHA-256, MIME, and signature validation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Upload rate limit exceeded.
+  /companies/{companyId}/files/{fileId}/finalize:
+    post:
+      operationId: finalizeFileUpload
+      summary: Quarantine an uploaded file and request asynchronous malware scanning.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/FileId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Scan requested; status may already be ready when a synchronous worker is used.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /companies/{companyId}/files/{fileId}:
+    get:
+      operationId: getFileMetadata
+      summary: Read authorized metadata without exposing the private object key.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/FileId"
+      responses:
+        "200":
+          description: Company-scoped file metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: File is outside the requested company.
+    delete:
+      operationId: deleteFile
+      summary: Remove the private binary while preserving metadata and audit history.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/FileId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "204":
+          description: Binary deleted and metadata tombstoned.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /companies/{companyId}/files/{fileId}/download:
+    get:
+      operationId: downloadFile
+      summary: Stream a ready, malware-accepted private file after authorization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/FileId"
+      responses:
+        "200":
+          description: Original binary with a safe attachment filename.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          description: Download rate limit exceeded.
 components:
   securitySchemes:
     cookieAuth:
@@ -1208,6 +1372,13 @@ components:
         pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
     CompanyId:
       name: companyId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    FileId:
+      name: fileId
       in: path
       required: true
       schema:
@@ -1290,6 +1461,100 @@ components:
         type: string
         enum: ["true", "false"]
   schemas:
+    InitiateFileRequest:
+      type: object
+      required: [purpose, original_name, mime_type, size, checksum_sha256]
+      properties:
+        purpose:
+          type: string
+          enum: [checklist_evidence, vehicle_document, work_order_attachment]
+        original_name:
+          type: string
+          maxLength: 255
+        mime_type:
+          type: string
+          enum: [application/pdf, image/jpeg, image/png, image/webp]
+        size:
+          type: integer
+          minimum: 1
+          maximum: 20971520
+        checksum_sha256:
+          type: string
+          pattern: "^[a-fA-F0-9]{64}$"
+    FileAsset:
+      type: object
+      required: [id, company_id, created_by, purpose, original_name, mime_type, size, checksum_sha256, status, scan_status, pending_expires_at, created_at]
+      properties:
+        id:
+          type: string
+        company_id:
+          type: string
+        created_by:
+          type: string
+        purpose:
+          type: string
+        original_name:
+          type: string
+        mime_type:
+          type: string
+        size:
+          type: integer
+        checksum_sha256:
+          type: string
+        status:
+          type: string
+          enum: [pending, uploaded, quarantined, ready, rejected, deleted, expired]
+        scan_status:
+          type: string
+          enum: [not_started, pending, clean, infected, failed, skipped]
+        rejection_reason:
+          type: [string, "null"]
+        attached_type:
+          type: [string, "null"]
+        attached_id:
+          type: [string, "null"]
+        pending_expires_at:
+          type: string
+          format: date-time
+        retention_until:
+          type: [string, "null"]
+          format: date-time
+        uploaded_at:
+          type: [string, "null"]
+          format: date-time
+        finalized_at:
+          type: [string, "null"]
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    FileResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/FileAsset"
+    FileInitiatedResponse:
+      type: object
+      required: [data, upload]
+      properties:
+        data:
+          $ref: "#/components/schemas/FileAsset"
+        upload:
+          type: object
+          required: [method, url, content_type, field, expires_at]
+          properties:
+            method:
+              const: POST
+            url:
+              type: string
+            content_type:
+              const: multipart/form-data
+            field:
+              const: file
+            expires_at:
+              type: string
+              format: date-time
     LoginRequest:
       type: object
       required: [email, password, surface, device_name]

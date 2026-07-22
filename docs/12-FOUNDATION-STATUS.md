@@ -30,6 +30,8 @@ Status date: 2026-07-22
 - Company-aware permission resolver with active employment and assignment checks.
 - API-wide request correlation with normalized `X-Request-ID`, structured error envelopes, audit propagation, and safe 5xx masking.
 - Database-backed, identity-scoped mutation idempotency with canonical request fingerprints, atomic acquisition, exact response replay, in-progress/mismatch conflicts, failure recovery, retention cleanup, and hashed client keys.
+- Company-scoped private file lifecycle with initiate/upload/finalize separation, owner enforcement, exact size/SHA-256 validation, MIME/signature allowlist, quarantine, asynchronous ClamAV scanning, authorized streaming download, tombstoned deletion, abandoned-upload cleanup, and append-only audit.
+- S3-compatible MinIO bucket initialization plus a Redis queue worker and ClamAV service in local Compose; unscanned mode is explicit, non-production-only, and never represented as clean.
 - React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
@@ -39,13 +41,13 @@ Status date: 2026-07-22
 - Mantine Roles & Permissions workspace covering catalog search, system-role inspection, custom-role creation/profile editing, permission mapping, and guarded deletion.
 - Mantine identity Access tab covering standard-role catalog, scoped effective-dated assignment, history, and guarded revocation.
 - npm workspace plus shared API-contract and web-UI packages.
-- PostgreSQL 18, Redis 8, MinIO, and Mailpit local compose definition.
+- PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
 - CI jobs for PostgreSQL migration/seed validation, PHP tests/format/audit, and web build/lint.
 
 ## Verified locally
 
-- API test suite: 88 tests, 502 assertions.
+- API test suite: 95 tests, 557 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -54,6 +56,7 @@ Status date: 2026-07-22
 - Access catalog isolation, global-role exclusion, role-scope validation, maker-history privacy, capability projection, and active-assignment listing.
 - Standard-access catalog isolation, privileged/global-role exclusion, company/department/location coverage, overlap denial, self-action/MFA gates, history, revocation, and scheduled-role classification protection.
 - Request-ID preservation/generation, correlated framework errors and audit records, canonical JSON replay without duplicate side effects, payload-mismatch denial, in-progress retry signaling, and failed-response recovery.
+- File checksum/signature rejection, upload ownership, company isolation, quarantine/scan state, infected-object removal, authorized download, deletion tombstone, and audit evidence.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.
@@ -73,7 +76,7 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - OpenAPI generated clients.
-- Remaining shared-platform foundations: file upload/finalize/scan, document sequence, transactional outbox/notification worker, and production observability.
+- Remaining shared-platform foundations: document sequence, transactional outbox/notification worker, and production observability.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 

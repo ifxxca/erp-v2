@@ -22,6 +22,17 @@ Every API response includes `X-Request-ID`. Clients may send an 8–128 characte
 
 Authenticated business mutations accept an optional `Idempotency-Key` containing 16–128 URL-safe characters. The key is scoped to the authenticated identity and exact route/query/canonical JSON payload. A completed request is replayed for 24 hours with `Idempotency-Replayed: true`; reuse for another request returns `409 IDEMPOTENCY_KEY_REUSED`, while an equivalent request still running returns `409 IDEMPOTENCY_REQUEST_IN_PROGRESS` plus `Retry-After`. Failed responses are not cached. Clients must reuse the same key only when retrying the same logical command.
 
+## Private file endpoints
+
+- `POST /companies/{company}/files` reserves company-scoped metadata and returns the multipart content endpoint.
+- `POST /companies/{company}/files/{file}/content` accepts the owner binary and verifies its exact size, SHA-256 checksum, detected MIME, and binary signature. This multipart endpoint intentionally does not use `Idempotency-Key`.
+- `POST /companies/{company}/files/{file}/finalize` quarantines the upload and dispatches malware scanning.
+- `GET /companies/{company}/files/{file}` returns metadata without disk credentials or object key.
+- `GET /companies/{company}/files/{file}/download` streams only a `ready` private object after scoped authorization.
+- `DELETE /companies/{company}/files/{file}` removes the binary and keeps a metadata/audit tombstone; attached files must be deleted by their owning domain workflow.
+
+The Compose stack creates the private MinIO bucket, runs a Redis queue worker, and scans with ClamAV. Production must keep `FILES_ALLOW_UNSCANNED=false`. The test-only skipped scanner records `scan_status=skipped`, never `clean`. Abandoned reservations expire after 24 hours. Legal retention remains unset until a domain attaches the file and Q-206 defines the policy.
+
 ## Identity endpoints
 
 - `POST /auth/login` issues an expiring bearer token; mobile login also starts one 30-day device-bound refresh family.
@@ -70,7 +81,7 @@ Token idle timeout is enforced before Sanctum updates `last_used_at`: ERP Web 30
 
 Mobile refresh tokens are stored server-side only as SHA-256 hashes, rotate on every use, and retain their consumed history for replay detection. Rotation does not extend the 30-day family expiry. Mobile clients must transmit them only over TLS and keep them in platform-protected secure storage, never ordinary preferences or logs.
 
-The canonical payload and response definitions are in `packages/api-contract/openapi.yaml`.
+The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.12.0).
 
 ## Verification
 

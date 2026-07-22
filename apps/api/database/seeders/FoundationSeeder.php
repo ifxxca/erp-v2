@@ -55,6 +55,9 @@ class FoundationSeeder extends Seeder
             ['identity.role.manage', 'identity', 'role', 'manage'],
             ['audit.log.view', 'audit', 'log', 'view'],
             ['audit.export.create', 'audit', 'export', 'create'],
+            ['file.asset.create', 'file', 'asset', 'create'],
+            ['file.asset.view', 'file', 'asset', 'view'],
+            ['file.asset.delete', 'file', 'asset', 'delete'],
             ['fleet.vehicle.view', 'fleet', 'vehicle', 'view'],
             ['fleet.vehicle.manage', 'fleet', 'vehicle', 'manage'],
             ['fleet.checklist.submit', 'fleet', 'checklist', 'submit'],
@@ -123,12 +126,26 @@ class FoundationSeeder extends Seeder
 
         Role::query()->where('code', 'fleet-manager')->firstOrFail()
             ->permissions()->syncWithoutDetaching($permissions
-            ->only(['fleet.vehicle.view', 'fleet.vehicle.manage', 'maintenance.work-order.view'])
+            ->only([
+                'file.asset.create',
+                'file.asset.view',
+                'file.asset.delete',
+                'fleet.vehicle.view',
+                'fleet.vehicle.manage',
+                'maintenance.work-order.view',
+            ])
             ->pluck('id'));
 
         Role::query()->where('code', 'maintenance-officer')->firstOrFail()
             ->permissions()->syncWithoutDetaching($permissions
-            ->only(['fleet.vehicle.view', 'maintenance.work-order.view', 'maintenance.work-order.manage'])
+            ->only([
+                'file.asset.create',
+                'file.asset.view',
+                'file.asset.delete',
+                'fleet.vehicle.view',
+                'maintenance.work-order.view',
+                'maintenance.work-order.manage',
+            ])
             ->pluck('id'));
 
         Role::query()->where('code', 'auditor')->firstOrFail()

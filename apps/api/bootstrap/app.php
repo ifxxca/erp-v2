@@ -7,6 +7,7 @@ use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\RequireGlobalPermission;
 use App\Http\Middleware\RequireRecentMfa;
 use App\Http\Middleware\RequireScopedPermission;
+use App\Modules\Files\Application\FileWorkflowException;
 use App\Modules\Identity\Application\AccessGovernanceException;
 use App\Modules\Identity\Application\MfaException;
 use App\Modules\Identity\Application\RefreshTokenException;
@@ -34,6 +35,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*') || $request->expectsJson());
         $exceptions->render(fn (AccessGovernanceException $exception) => response()->json([
+            'message' => $exception->getMessage(),
+            'code' => $exception->errorCode,
+        ], $exception->httpStatus));
+        $exceptions->render(fn (FileWorkflowException $exception) => response()->json([
             'message' => $exception->getMessage(),
             'code' => $exception->errorCode,
         ], $exception->httpStatus));

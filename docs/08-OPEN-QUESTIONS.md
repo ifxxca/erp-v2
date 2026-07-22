@@ -81,7 +81,7 @@ Seluruh P0 telah diselesaikan pada 2026-07-22 dan dirangkum di [10-P0-DECISIONS.
 | Q-203 | Bahasa, timezone, currency, dan format lokal yang didukung? | Product | Open |
 | Q-204 | Target availability, RPO, RTO, serta support hours per module? | Sponsor/IT | Open |
 | Q-205 | Integrasi eksternal prioritas: GPS, bank, accounting, attendance, messaging? | Product | Open |
-| Q-206 | Kebijakan retention file, audit, dan personal data? | Legal/Security | Open |
+| Q-206 | Kebijakan retention file, audit, dan personal data? Metadata retention sudah tersedia tetapi tanggal tidak diasumsikan sebelum attachment/domain policy diputuskan. | Legal/Security | Open |
 
 ## Template keputusan
 

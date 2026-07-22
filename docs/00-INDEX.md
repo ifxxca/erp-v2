@@ -32,13 +32,14 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 | [0009](adr/0009-fleet-maintenance-pilot.md) | Fleet + Maintenance sebagai pilot pertama |
 | [0010](adr/0010-technology-baseline.md) | Baseline teknologi implementation |
 | [0011](adr/0011-identity-access-governance.md) | Identity lifecycle dan privileged access governance |
+| [0012](adr/0012-private-file-lifecycle.md) | Private file lifecycle, quarantine, scan, dan authorized download |
 
 ## Status baseline
 
 | Area | Status | Next gate |
 |---|---|---|
 | Product scope | P0 accepted | Validasi flow detail bersama domain owner |
-| Architecture | Foundation implemented | Selesaikan file, sequence, outbox, observability, dan deployment verification |
+| Architecture | Foundation implemented | Selesaikan sequence, outbox, observability, dan deployment verification |
 | Logical ERD | Foundation physical schema | Review dan implementasi schema Fleet/Maintenance |
 | Identity/RBAC | Implemented and verified | Access certification/SoD reporting dan production environment verification |
 | Data import | Proposed | Profiling serta data contract pertama |

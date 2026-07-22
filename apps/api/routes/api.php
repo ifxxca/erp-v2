@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
+use App\Http\Controllers\Api\V1\FileController;
 use App\Http\Controllers\Api\V1\IdentityCompanyController;
 use App\Http\Controllers\Api\V1\IdentityUserController;
 use App\Http\Controllers\Api\V1\InvitationController;
@@ -42,12 +43,27 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/auth/mfa/totp', [MfaController::class, 'disable'])
             ->middleware(['mfa.recent', 'throttle:3,1']);
 
+        Route::post('/companies/{company}/files/{file}/content', [FileController::class, 'upload'])
+            ->name('files.upload')
+            ->middleware(['mfa.authenticated', 'permission.scoped:file.asset.create', 'throttle:30,1']);
+
         Route::middleware(['mfa.authenticated', 'idempotent'])->group(function (): void {
             Route::get('/auth/sessions', [SessionController::class, 'index']);
             Route::delete('/auth/sessions/{tokenId}', [SessionController::class, 'revoke'])
                 ->whereNumber('tokenId');
             Route::post('/auth/sessions/revoke-all', [SessionController::class, 'revokeAll'])
                 ->middleware('throttle:3,1');
+
+            Route::post('/companies/{company}/files', [FileController::class, 'store'])
+                ->middleware('permission.scoped:file.asset.create');
+            Route::post('/companies/{company}/files/{file}/finalize', [FileController::class, 'finalize'])
+                ->middleware('permission.scoped:file.asset.create');
+            Route::get('/companies/{company}/files/{file}', [FileController::class, 'show'])
+                ->middleware('permission.scoped:file.asset.view');
+            Route::get('/companies/{company}/files/{file}/download', [FileController::class, 'download'])
+                ->middleware(['permission.scoped:file.asset.view', 'throttle:60,1']);
+            Route::delete('/companies/{company}/files/{file}', [FileController::class, 'destroy'])
+                ->middleware('permission.scoped:file.asset.delete');
 
             Route::post('/identity/users/invitations', [InvitationController::class, 'store'])
                 ->middleware('permission.scoped:identity.user.manage');

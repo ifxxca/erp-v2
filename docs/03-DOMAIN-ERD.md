@@ -691,6 +691,25 @@ erDiagram
 | `comments` | Percakapan polymorphic bila domain mengizinkan |
 | `audit_logs` | Jejak perubahan immutable untuk operasi sensitif |
 
+### File lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: initiate metadata
+    pending --> uploaded: size + SHA-256 + MIME + signature valid
+    pending --> rejected: structural validation failed
+    pending --> expired: reservation > 24 hours
+    uploaded --> quarantined: finalize
+    uploaded --> expired: reservation > 24 hours
+    quarantined --> ready: malware clean
+    quarantined --> ready: scan skipped, non-production opt-in only
+    quarantined --> rejected: malware found
+    quarantined --> quarantined: scanner failure/retry
+    ready --> deleted: authorized domain action
+```
+
+`files` menyimpan company, creator, purpose, private disk/object key, nama asli, MIME declared/detected, expected/actual size dan SHA-256, lifecycle/scan status, optional polymorphic owner, expiry reservation, retention marker, serta deletion tombstone. Object key tidak pernah menjadi bagian response API.
+
 ### Request control
 
 ```mermaid
