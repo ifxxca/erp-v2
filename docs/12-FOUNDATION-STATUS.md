@@ -14,6 +14,8 @@ Status date: 2026-07-22
 - Ninety-day maximum privileged expiry, duplicate protection, scoped notification, and recent-MFA enforcement point.
 - TOTP enrollment, encrypted secret storage, confirmation, per-token MFA challenge, and replay prevention.
 - Hashed single-use recovery codes, regeneration, optional-MFA disable, and mandatory MFA for active privileged assignments.
+- Non-enumerating password recovery with hashed, expiring, single-use reset tokens and device revocation after reset.
+- Device-session listing and scoped revocation plus surface-specific idle and absolute token lifetimes.
 - Explicit user-location memberships and department/location membership checks in effective permission resolution.
 - ULID identity schema for companies, departments, locations, memberships, roles, permissions, access requests, and role assignments.
 - Seed data for two legal entities, eight departments per company, initial system roles, and initial permission catalog.
@@ -26,13 +28,14 @@ Status date: 2026-07-22
 
 ## Verified locally
 
-- API test suite: 34 tests, 164 assertions.
+- API test suite: 42 tests, 216 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
 - Generic credential failures, invitation replay denial, scoped invitation authorization, and termination revocation behavior.
 - Privileged self-approval denial, MFA gate, maximum expiry, duplicate request, rejection, wrong-company denial, and immediate token revocation.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
+- Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - ERP and Operations production builds.
 - Web lint.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
@@ -46,11 +49,11 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 
 ## Intentionally not implemented yet
 
-- Password reset and identity administration UI.
-- Session absolute-lifetime middleware and refresh-token family implementation.
+- Identity administration UI.
+- Rotating mobile refresh-token family and reuse detection.
 - Organization/access administration screens.
 - OpenAPI generated clients.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 
-These belong to the next identity vertical slice; authentication must not be described as production-ready until password recovery and session/refresh-token controls are complete.
+These belong to the next identity vertical slice; mobile authentication must not be described as production-ready until refresh-token rotation and reuse detection are complete.

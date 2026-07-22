@@ -4,12 +4,18 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MfaController;
+use App\Http\Controllers\Api\V1\PasswordRecoveryController;
 use App\Http\Controllers\Api\V1\PrivilegedAccessController;
+use App\Http\Controllers\Api\V1\SessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/auth/password/forgot', [PasswordRecoveryController::class, 'request'])
+        ->middleware('throttle:3,1');
+    Route::post('/auth/password/reset', [PasswordRecoveryController::class, 'reset'])
+        ->middleware('throttle:5,1');
     Route::post('/auth/invitations/accept', [InvitationController::class, 'accept'])
         ->middleware('throttle:10,1');
 
@@ -29,6 +35,12 @@ Route::prefix('v1')->group(function (): void {
             ->middleware(['mfa.recent', 'throttle:3,1']);
 
         Route::middleware('mfa.authenticated')->group(function (): void {
+            Route::get('/auth/sessions', [SessionController::class, 'index']);
+            Route::delete('/auth/sessions/{tokenId}', [SessionController::class, 'revoke'])
+                ->whereNumber('tokenId');
+            Route::post('/auth/sessions/revoke-all', [SessionController::class, 'revokeAll'])
+                ->middleware('throttle:3,1');
+
             Route::post('/identity/users/invitations', [InvitationController::class, 'store'])
                 ->middleware('permission.scoped:identity.user.manage');
             Route::post(

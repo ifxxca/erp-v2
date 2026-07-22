@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.4.0
+  version: 0.5.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -30,6 +30,61 @@ paths:
           $ref: "#/components/responses/ValidationFailed"
         "429":
           description: Login rate limit exceeded.
+  /auth/password/forgot:
+    post:
+      operationId: requestPasswordReset
+      summary: Request a single-use password-reset link without revealing account existence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "202":
+          description: Request accepted regardless of account eligibility.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Password-reset request rate limit exceeded.
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      summary: Consume a password-reset token and revoke all device sessions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "200":
+          description: Password changed and sessions revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    const: password_reset
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Password-reset attempt rate limit exceeded.
   /auth/logout:
     post:
       operationId: logout
@@ -192,6 +247,92 @@ paths:
           $ref: "#/components/responses/ValidationFailed"
         "429":
           description: Disable rate limit exceeded.
+  /auth/sessions:
+    get:
+      operationId: listSessions
+      summary: List the authenticated identity's device tokens.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Device-session list.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DeviceSession"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /auth/sessions/{tokenId}:
+    delete:
+      operationId: revokeSession
+      summary: Revoke one device token owned by the authenticated identity.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TokenId"
+      responses:
+        "200":
+          description: Session revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, current]
+                properties:
+                  status:
+                    const: revoked
+                  current:
+                    type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Token is not owned by the authenticated identity.
+  /auth/sessions/revoke-all:
+    post:
+      operationId: revokeAllSessions
+      summary: Revoke all identity device tokens, optionally preserving the current token.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeAllSessionsRequest"
+      responses:
+        "200":
+          description: Matching sessions revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, revoked_count, kept_current]
+                properties:
+                  status:
+                    const: revoked
+                  revoked_count:
+                    type: integer
+                    minimum: 0
+                  kept_current:
+                    type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Revoke-all rate limit exceeded.
   /auth/invitations/accept:
     post:
       operationId: acceptInvitation
@@ -490,6 +631,13 @@ components:
       schema:
         type: string
         pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    TokenId:
+      name: tokenId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
   responses:
     Unauthenticated:
       description: Authentication failed or is missing.
@@ -554,6 +702,65 @@ components:
         password:
           type: string
           format: password
+    PasswordResetRequest:
+      type: object
+      required: [email, token, password, password_confirmation]
+      properties:
+        email:
+          type: string
+          format: email
+        token:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 12
+        password_confirmation:
+          type: string
+          format: password
+    RevokeAllSessionsRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          format: password
+        keep_current:
+          type: boolean
+          default: false
+    DeviceSession:
+      type: object
+      required:
+        - id
+        - device_name
+        - surface
+        - created_at
+        - last_used_at
+        - expires_at
+        - mfa_verified_at
+        - current
+      properties:
+        id:
+          type: string
+        device_name:
+          type: string
+        surface:
+          type: string
+          enum: [erp_web, ops_web, mobile, unknown]
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: [string, "null"]
+          format: date-time
+        expires_at:
+          type: [string, "null"]
+          format: date-time
+        mfa_verified_at:
+          type: [string, "null"]
+          format: date-time
+        current:
+          type: boolean
     TotpCode:
       type: object
       required: [code]
