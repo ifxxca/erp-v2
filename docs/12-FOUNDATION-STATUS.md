@@ -29,6 +29,9 @@ Status date: 2026-07-22
 - React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
+- Mantine-based ERP design system covering the app shell, responsive navigation, forms, tables, drawers, modals, notifications, and branded theme.
+- Company-scoped invitation UI with validated organization assignment and capability-gated access.
+- MFA and device-session self-service workspace covering TOTP enrollment, recovery codes, step-up verification, optional disable, session inventory, and scoped/bulk revocation.
 - npm workspace plus shared API-contract and web-UI packages.
 - PostgreSQL 18, Redis 8, MinIO, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
@@ -49,7 +52,7 @@ Status date: 2026-07-22
 - Identity directory scope/cross-company isolation, HR organization scheduling, invalid-scope and schedule-conflict denial, global-status boundaries, reactivation eligibility, and session revocation.
 - ERP and Operations production builds.
 - Web lint.
-- Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including privileged request, approval, assignment creation, and immediate revocation.
+- Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including invitation, TOTP enrollment, recovery-code presentation, mandatory MFA re-entry, session revocation, privileged request, approval, assignment creation, and immediate revocation.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
 - Composer strict validation.
 - Composer dependency security audit.
@@ -62,7 +65,6 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - Role catalog and permission-management screens.
-- Invitation, session, and MFA self-service UI.
 - OpenAPI generated clients.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.

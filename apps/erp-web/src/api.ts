@@ -89,6 +89,32 @@ export type LoginResponse = {
   mfa_required: boolean
 }
 
+export type MfaStatus = {
+  required: boolean
+  enabled: boolean
+  status: 'not_configured' | 'pending' | 'active' | 'disabled'
+  confirmed_at: string | null
+  unused_recovery_codes: number
+  current_token_verified_at: string | null
+}
+
+export type MfaEnrollment = {
+  secret: string
+  otpauth_url: string
+  status: 'pending'
+}
+
+export type DeviceSession = {
+  id: string
+  device_name: string
+  surface: string | null
+  created_at: string
+  last_used_at: string | null
+  expires_at: string | null
+  mfa_verified_at: string | null
+  current: boolean
+}
+
 export type AccessCatalogUser = {
   id: string
   name: string

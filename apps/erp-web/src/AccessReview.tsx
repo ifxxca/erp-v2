@@ -1,5 +1,38 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react'
 import {
+  Alert,
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Drawer,
+  Group,
+  LoadingOverlay,
+  Modal,
+  Pagination,
+  Select,
+  SimpleGrid,
+  Stack,
+  Table,
+  Tabs,
+  Text,
+  Textarea,
+  TextInput,
+  ThemeIcon,
+  Title,
+} from '@mantine/core'
+import {
+  IconAlertTriangle,
+  IconCheck,
+  IconClipboardCheck,
+  IconKey,
+  IconPlus,
+  IconShieldLock,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react'
+import {
   apiRequest,
   type AccessCatalogUser,
   type AccessRequest,
@@ -33,13 +66,11 @@ const displayDateTime = (value: string | null) => value
   ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
   : 'Tanpa expiry'
 
+const statusColor = (value: string) => value === 'approved' ? 'green' : value === 'pending' ? 'yellow' : 'red'
+
 export default function AccessReview({ token, currentUser, company, organization, onError, onMessage }: Props) {
   const capabilities = company.capabilities
-  const defaultSection: Section = capabilities.can_approve_access
-    ? 'queue'
-    : capabilities.can_request_access
-      ? 'mine'
-      : 'assignments'
+  const defaultSection: Section = capabilities.can_approve_access ? 'queue' : capabilities.can_request_access ? 'mine' : 'assignments'
   const [section, setSection] = useState<Section>(defaultSection)
   const [catalogUsers, setCatalogUsers] = useState<AccessCatalogUser[]>([])
   const [roles, setRoles] = useState<AccessRole[]>([])
@@ -55,7 +86,7 @@ export default function AccessReview({ token, currentUser, company, organization
   const [assignmentPage, setAssignmentPage] = useState(1)
   const [assignmentLastPage, setAssignmentLastPage] = useState(1)
   const [assignmentTotal, setAssignmentTotal] = useState(0)
-  const [queueStatus, setQueueStatus] = useState('pending')
+  const [queueStatus, setQueueStatus] = useState<string | null>('pending')
   const [showRequestForm, setShowRequestForm] = useState(false)
   const [decision, setDecision] = useState<{ request: AccessRequest; action: 'approve' | 'reject' } | null>(null)
   const [revocation, setRevocation] = useState<RoleAssignment | null>(null)
@@ -66,38 +97,24 @@ export default function AccessReview({ token, currentUser, company, organization
     try {
       const requests: Array<Promise<void>> = []
       if (capabilities.can_request_access) {
-        requests.push(apiRequest<{ data: { users: AccessCatalogUser[]; roles: AccessRole[] } }>(
-          `/identity/companies/${company.id}/access-catalog`, {}, token,
-        ).then((response) => {
+        requests.push(apiRequest<{ data: { users: AccessCatalogUser[]; roles: AccessRole[] } }>(`/identity/companies/${company.id}/access-catalog`, {}, token).then((response) => {
           setCatalogUsers(response.data.users)
           setRoles(response.data.roles)
         }))
-        requests.push(apiRequest<Page<AccessRequest>>(
-          `/identity/companies/${company.id}/access-requests/mine?page=${minePage}`, {}, token,
-        ).then((response) => {
-          setMine(response.data)
-          setMineLastPage(response.last_page)
-          setMineTotal(response.total)
+        requests.push(apiRequest<Page<AccessRequest>>(`/identity/companies/${company.id}/access-requests/mine?page=${minePage}`, {}, token).then((response) => {
+          setMine(response.data); setMineLastPage(response.last_page); setMineTotal(response.total)
         }))
       }
       if (capabilities.can_approve_access) {
         const params = new URLSearchParams({ page: String(queuePage) })
         if (queueStatus) params.set('status', queueStatus)
-        requests.push(apiRequest<Page<AccessRequest>>(
-          `/identity/companies/${company.id}/access-requests?${params}`, {}, token,
-        ).then((response) => {
-          setQueue(response.data)
-          setQueueLastPage(response.last_page)
-          setQueueTotal(response.total)
+        requests.push(apiRequest<Page<AccessRequest>>(`/identity/companies/${company.id}/access-requests?${params}`, {}, token).then((response) => {
+          setQueue(response.data); setQueueLastPage(response.last_page); setQueueTotal(response.total)
         }))
       }
       if (capabilities.can_revoke_access) {
-        requests.push(apiRequest<Page<RoleAssignment>>(
-          `/identity/companies/${company.id}/role-assignments?page=${assignmentPage}`, {}, token,
-        ).then((response) => {
-          setAssignments(response.data)
-          setAssignmentLastPage(response.last_page)
-          setAssignmentTotal(response.total)
+        requests.push(apiRequest<Page<RoleAssignment>>(`/identity/companies/${company.id}/role-assignments?page=${assignmentPage}`, {}, token).then((response) => {
+          setAssignments(response.data); setAssignmentLastPage(response.last_page); setAssignmentTotal(response.total)
         }))
       }
       await Promise.all(requests)
@@ -116,15 +133,7 @@ export default function AccessReview({ token, currentUser, company, organization
     setAssignmentPage(1)
   }, [company.id, defaultSection])
 
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
-
-  const tabs = [
-    capabilities.can_approve_access && { id: 'queue' as const, label: 'Approval queue', count: queueTotal },
-    capabilities.can_request_access && { id: 'mine' as const, label: 'My requests', count: mineTotal },
-    capabilities.can_revoke_access && { id: 'assignments' as const, label: 'Active assignments', count: assignmentTotal },
-  ].filter(Boolean) as Array<{ id: Section; label: string; count: number }>
+  useEffect(() => { void refresh() }, [refresh])
 
   async function completed(message: string) {
     setDecision(null)
@@ -134,69 +143,80 @@ export default function AccessReview({ token, currentUser, company, organization
     await refresh()
   }
 
-  return <>
-    <section className="access-summary">
-      <article><span>{queueStatus === 'pending' ? 'Pending review' : 'Visible reviews'}</span><strong>{queueTotal}</strong><small>Maker dan approver harus berbeda</small></article>
-      <article><span>My requests</span><strong>{mineTotal}</strong><small>Maximum privileged expiry 90 hari</small></article>
-      <article><span>Active privileged</span><strong>{assignmentTotal}</strong><small>Revocation berlaku segera</small></article>
-    </section>
+  return <Stack gap="lg">
+    <SimpleGrid cols={{ base: 1, sm: 3 }}>
+      <SummaryCard label={queueStatus === 'pending' ? 'Pending review' : 'Visible reviews'} value={queueTotal} detail="Maker dan approver harus berbeda" icon={<IconClipboardCheck size={20} />} />
+      <SummaryCard label="My requests" value={mineTotal} detail="Maximum privileged expiry 90 hari" icon={<IconKey size={20} />} />
+      <SummaryCard label="Active privileged" value={assignmentTotal} detail="Revocation berlaku segera" icon={<IconShieldLock size={20} />} />
+    </SimpleGrid>
 
-    <section className="access-card">
-      <header className="access-toolbar">
-        <div className="tabs" role="tablist" aria-label="Access review sections">
-          {tabs.map((tab) => <button key={tab.id} role="tab" aria-selected={section === tab.id} className={section === tab.id ? 'active' : ''} onClick={() => setSection(tab.id)}>{tab.label}<span>{tab.count}</span></button>)}
-        </div>
-        {capabilities.can_request_access && <button className="primary compact" onClick={() => setShowRequestForm(true)}>+ New request</button>}
-      </header>
+    <Card padding={0} pos="relative" style={{ overflow: 'hidden' }}>
+      <LoadingOverlay visible={busy} overlayProps={{ blur: 1 }} />
+      <Group justify="space-between" p="md" align="flex-end">
+        <Tabs value={section} onChange={(value) => setSection(value as Section)}>
+          <Tabs.List>
+            {capabilities.can_approve_access && <Tabs.Tab value="queue" rightSection={<Badge size="xs" variant="light">{queueTotal}</Badge>}>Approval queue</Tabs.Tab>}
+            {capabilities.can_request_access && <Tabs.Tab value="mine" rightSection={<Badge size="xs" variant="light">{mineTotal}</Badge>}>My requests</Tabs.Tab>}
+            {capabilities.can_revoke_access && <Tabs.Tab value="assignments" rightSection={<Badge size="xs" variant="light">{assignmentTotal}</Badge>}>Active assignments</Tabs.Tab>}
+          </Tabs.List>
+        </Tabs>
+        {capabilities.can_request_access && <Button leftSection={<IconPlus size={17} />} onClick={() => setShowRequestForm(true)}>New request</Button>}
+      </Group>
 
       {section === 'queue' && <>
-        <div className="queue-filter"><label>Status<select value={queueStatus} onChange={(event) => { setQueuePage(1); setQueueStatus(event.target.value) }}><option value="pending">Pending</option><option value="">Semua</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option></select></label></div>
+        <Group justify="flex-end" p="md" bg="gray.0"><Select label="Status" w={180} clearable value={queueStatus} onChange={(value) => { setQueuePage(1); setQueueStatus(value) }} data={['pending', 'approved', 'rejected', 'cancelled']} /></Group>
         <RequestList requests={queue} currentUser={currentUser} canDecide onDecision={(request, action) => setDecision({ request, action })} />
-        <Pagination page={queuePage} lastPage={queueLastPage} busy={busy} onPage={setQueuePage} />
+        <Pager page={queuePage} lastPage={queueLastPage} onPage={setQueuePage} />
       </>}
-      {section === 'mine' && <><RequestList requests={mine} currentUser={currentUser} /><Pagination page={minePage} lastPage={mineLastPage} busy={busy} onPage={setMinePage} /></>}
-      {section === 'assignments' && <><AssignmentList assignments={assignments} organization={organization} onRevoke={setRevocation} /><Pagination page={assignmentPage} lastPage={assignmentLastPage} busy={busy} onPage={setAssignmentPage} /></>}
-      {busy && <div className="loading-bar" />}
-    </section>
+      {section === 'mine' && <><RequestList requests={mine} currentUser={currentUser} /><Pager page={minePage} lastPage={mineLastPage} onPage={setMinePage} /></>}
+      {section === 'assignments' && <><AssignmentList assignments={assignments} organization={organization} onRevoke={setRevocation} /><Pager page={assignmentPage} lastPage={assignmentLastPage} onPage={setAssignmentPage} /></>}
+    </Card>
 
-    {showRequestForm && <RequestDrawer token={token} company={company} organization={organization} users={catalogUsers.filter((user) => user.id !== currentUser.id)} roles={roles} onClose={() => setShowRequestForm(false)} onError={onError} onCompleted={() => completed('Privileged access request berhasil dibuat dan menunggu approver yang berbeda.')} />}
+    <RequestDrawer opened={showRequestForm} token={token} company={company} organization={organization} users={catalogUsers.filter((user) => user.id !== currentUser.id)} roles={roles} onClose={() => setShowRequestForm(false)} onError={onError} onCompleted={() => completed('Privileged access request berhasil dibuat dan menunggu approver yang berbeda.')} />
     {decision && <DecisionDialog token={token} company={company} decision={decision} onClose={() => setDecision(null)} onError={onError} onCompleted={() => completed(`Request untuk ${decision.request.target_user.name} berhasil ${decision.action === 'approve' ? 'disetujui' : 'ditolak'}.`)} />}
     {revocation && <RevocationDialog token={token} company={company} assignment={revocation} onClose={() => setRevocation(null)} onError={onError} onCompleted={() => completed(`Akses ${revocation.user.name} dicabut dan seluruh session-nya direvoke.`)} />}
-  </>
+  </Stack>
+}
+
+function SummaryCard({ label, value, detail, icon }: { label: string; value: number; detail: string; icon: ReactNode }) {
+  return <Card padding="lg"><Group justify="space-between"><Text size="sm" c="dimmed">{label}</Text><ThemeIcon variant="light" size="lg">{icon}</ThemeIcon></Group><Title order={3} mt="sm">{value}</Title><Text size="xs" c="dimmed" mt={4}>{detail}</Text></Card>
 }
 
 function RequestList({ requests, currentUser, canDecide = false, onDecision }: { requests: AccessRequest[]; currentUser: CurrentUser; canDecide?: boolean; onDecision?: (request: AccessRequest, action: 'approve' | 'reject') => void }) {
-  if (!requests.length) return <div className="access-empty"><strong>Tidak ada request pada tampilan ini.</strong><span>Request baru atau perubahan filter akan muncul di sini.</span></div>
-
-  return <div className="request-list">{requests.map((request) => {
+  if (!requests.length) return <EmptyState title="Tidak ada request pada tampilan ini." detail="Request baru atau perubahan filter akan muncul di sini." />
+  return <Stack p="md" gap="sm">{requests.map((request) => {
     const selfDecision = request.requested_by.id === currentUser.id || request.target_user.id === currentUser.id
-    return <article className="request-row" key={request.id}>
-      <div className="request-person"><div className="avatar">{request.target_user.name.slice(0, 2).toUpperCase()}</div><div><strong>{request.target_user.name}</strong><small>{request.target_user.email}</small></div></div>
-      <div><span className="label">Role</span><strong>{request.role.name}</strong><small>{request.role.code}</small></div>
-      <div><span className="label">Requested by</span><strong>{request.requested_by.name}</strong><small>Until {displayDateTime(request.valid_until)}</small></div>
-      <div><StatusPill value={request.status} />{!request.target_mfa_enabled && request.status === 'pending' && <small className="warning">Target belum MFA</small>}</div>
-      {canDecide && request.status === 'pending' && <div className="decision-actions"><button className="secondary" disabled={selfDecision} title={selfDecision ? 'Maker/target tidak dapat memutus request ini' : ''} onClick={() => onDecision?.(request, 'reject')}>Reject</button><button className="primary compact" disabled={selfDecision || !request.target_mfa_enabled} onClick={() => onDecision?.(request, 'approve')}>Approve</button></div>}
-      <div className="request-reason">{request.reason}</div>
-    </article>
-  })}</div>
+    return <Card key={request.id} padding="md" radius="md">
+      <Group justify="space-between" align="flex-start">
+        <Group wrap="nowrap"><Avatar color="forest" variant="light">{request.target_user.name.slice(0, 2).toUpperCase()}</Avatar><div><Text fw={700}>{request.target_user.name}</Text><Text size="xs" c="dimmed">{request.target_user.email}</Text></div></Group>
+        <Stack gap={3} align="flex-end"><Badge color={statusColor(request.status)} variant="light">{request.status}</Badge>{!request.target_mfa_enabled && request.status === 'pending' && <Text size="xs" c="orange">Target belum MFA</Text>}</Stack>
+      </Group>
+      <SimpleGrid cols={{ base: 1, sm: 3 }} mt="md">
+        <div><Text size="xs" c="dimmed">Role</Text><Text size="sm" fw={700}>{request.role.name}</Text><Text size="xs" c="dimmed">{request.role.code}</Text></div>
+        <div><Text size="xs" c="dimmed">Requested by</Text><Text size="sm" fw={700}>{request.requested_by.name}</Text></div>
+        <div><Text size="xs" c="dimmed">Valid until</Text><Text size="sm" fw={700}>{displayDateTime(request.valid_until)}</Text></div>
+      </SimpleGrid>
+      <Text size="sm" p="sm" mt="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>{request.reason}</Text>
+      {canDecide && request.status === 'pending' && <Group justify="flex-end" mt="md"><Button color="red" variant="light" leftSection={<IconX size={16} />} disabled={selfDecision} onClick={() => onDecision?.(request, 'reject')}>Reject</Button><Button leftSection={<IconCheck size={16} />} disabled={selfDecision || !request.target_mfa_enabled} onClick={() => onDecision?.(request, 'approve')}>Approve</Button></Group>}
+    </Card>
+  })}</Stack>
 }
 
 function AssignmentList({ assignments, organization, onRevoke }: { assignments: RoleAssignment[]; organization: Organization; onRevoke: (assignment: RoleAssignment) => void }) {
-  const scopeName = (assignment: RoleAssignment) => {
-    if (assignment.location_id) return organization.locations.find((item) => item.id === assignment.location_id)?.name ?? 'Location scope'
-    if (assignment.department_id) return organization.departments.find((item) => item.id === assignment.department_id)?.name ?? 'Department scope'
-    return 'Company-wide'
-  }
-  if (!assignments.length) return <div className="access-empty"><strong>Tidak ada privileged assignment aktif.</strong><span>Assignment approved akan muncul di sini.</span></div>
-
-  return <div className="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Scope</th><th>Expiry</th><th /></tr></thead><tbody>{assignments.map((assignment) => <tr key={assignment.id}><td><strong>{assignment.user.name}</strong><small>{assignment.user.email}</small></td><td><strong>{assignment.role.name}</strong><small>{assignment.role.code}</small></td><td>{scopeName(assignment)}</td><td>{displayDateTime(assignment.valid_until)}</td><td><button className="row-action danger-text" onClick={() => onRevoke(assignment)}>Revoke</button></td></tr>)}</tbody></table></div>
+  const scopeName = (assignment: RoleAssignment) => assignment.location_id
+    ? organization.locations.find((item) => item.id === assignment.location_id)?.name ?? 'Location scope'
+    : assignment.department_id
+      ? organization.departments.find((item) => item.id === assignment.department_id)?.name ?? 'Department scope'
+      : 'Company-wide'
+  if (!assignments.length) return <EmptyState title="Tidak ada privileged assignment aktif." detail="Assignment approved akan muncul di sini." />
+  return <Table.ScrollContainer minWidth={760}><Table verticalSpacing="md" horizontalSpacing="lg" highlightOnHover><Table.Thead><Table.Tr><Table.Th>User</Table.Th><Table.Th>Role</Table.Th><Table.Th>Scope</Table.Th><Table.Th>Expiry</Table.Th><Table.Th /></Table.Tr></Table.Thead><Table.Tbody>{assignments.map((assignment) => <Table.Tr key={assignment.id}><Table.Td><Text size="sm" fw={700}>{assignment.user.name}</Text><Text size="xs" c="dimmed">{assignment.user.email}</Text></Table.Td><Table.Td><Text size="sm" fw={700}>{assignment.role.name}</Text><Text size="xs" c="dimmed">{assignment.role.code}</Text></Table.Td><Table.Td><Text size="sm">{scopeName(assignment)}</Text></Table.Td><Table.Td><Text size="sm">{displayDateTime(assignment.valid_until)}</Text></Table.Td><Table.Td><Button color="red" variant="subtle" size="xs" leftSection={<IconTrash size={15} />} onClick={() => onRevoke(assignment)}>Revoke</Button></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>
 }
 
-function RequestDrawer({ token, company, organization, users, roles, onClose, onError, onCompleted }: { token: string; company: Company; organization: Organization; users: AccessCatalogUser[]; roles: AccessRole[]; onClose: () => void; onError: (error: unknown) => void; onCompleted: () => Promise<void> }) {
-  const [targetId, setTargetId] = useState('')
-  const [roleId, setRoleId] = useState('')
-  const [departmentId, setDepartmentId] = useState('')
-  const [locationId, setLocationId] = useState('')
+function RequestDrawer({ opened, token, company, organization, users, roles, onClose, onError, onCompleted }: { opened: boolean; token: string; company: Company; organization: Organization; users: AccessCatalogUser[]; roles: AccessRole[]; onClose: () => void; onError: (error: unknown) => void; onCompleted: () => Promise<void> }) {
+  const [targetId, setTargetId] = useState<string | null>(null)
+  const [roleId, setRoleId] = useState<string | null>(null)
+  const [departmentId, setDepartmentId] = useState<string | null>(null)
+  const [locationId, setLocationId] = useState<string | null>(null)
   const [validUntil, setValidUntil] = useState(localDateTime(30))
   const [reason, setReason] = useState('')
   const [confirmed, setConfirmed] = useState(false)
@@ -205,25 +225,31 @@ function RequestDrawer({ token, company, organization, users, roles, onClose, on
   const selectedUser = users.find((user) => user.id === targetId)
   const availableDepartments = organization.departments.filter((item) => selectedUser?.department_ids.includes(item.id))
   const availableLocations = organization.locations.filter((item) => selectedUser?.location_ids.includes(item.id))
+  const scopeReady = selectedRole?.assignment_scope === 'department' ? Boolean(departmentId) : selectedRole?.assignment_scope === 'location' ? Boolean(locationId) : true
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/access-requests`, {
-        method: 'POST',
-        body: JSON.stringify({ target_user_id: targetId, role_id: roleId, department_id: departmentId || null, location_id: locationId || null, reason, valid_until: new Date(validUntil).toISOString() }),
-      }, token)
+      await apiRequest(`/identity/companies/${company.id}/access-requests`, { method: 'POST', body: JSON.stringify({ target_user_id: targetId, role_id: roleId, department_id: departmentId, location_id: locationId, reason, valid_until: new Date(validUntil).toISOString() }) }, token)
       await onCompleted()
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
 
-  const scopeReady = selectedRole?.assignment_scope === 'department'
-    ? Boolean(departmentId)
-    : selectedRole?.assignment_scope === 'location'
-      ? Boolean(locationId)
-      : true
-
-  return <Modal title="New privileged access request" subtitle="MFA step-up dan approver berbeda wajib" onClose={onClose}><form className="stack-form" onSubmit={(event) => void submit(event)}><label>Target employee<select value={targetId} onChange={(event) => { setTargetId(event.target.value); setDepartmentId(''); setLocationId(''); setConfirmed(false) }} required><option value="">Pilih employee</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.mfa_enabled ? 'MFA ready' : 'MFA belum aktif'}</option>)}</select></label>{selectedUser && !selectedUser.mfa_enabled && <div className="inline-warning">Request dapat dibuat, tetapi approval akan ditolak sampai target mengaktifkan MFA.</div>}<label>Privileged role<select value={roleId} onChange={(event) => { setRoleId(event.target.value); setDepartmentId(''); setLocationId(''); setConfirmed(false) }} required><option value="">Pilih role</option>{roles.map((role) => <option key={role.id} value={role.id}>{role.name} · {role.assignment_scope}</option>)}</select></label>{selectedRole?.description && <small>{selectedRole.description}</small>}{selectedRole?.assignment_scope === 'department' && <label>Department<select value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required><option value="">Pilih department</option>{availableDepartments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}{selectedRole?.assignment_scope === 'location' && <><label>Location<select value={locationId} onChange={(event) => setLocationId(event.target.value)} required><option value="">Pilih location</option>{availableLocations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Department restriction (optional)<select value={departmentId} onChange={(event) => setDepartmentId(event.target.value)}><option value="">Semua department target</option>{availableDepartments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></>}<label>Valid until<input type="datetime-local" min={localDateTime(0)} max={localDateTime(89)} value={validUntil} onChange={(event) => setValidUntil(event.target.value)} required /></label><label>Business justification<textarea value={reason} onChange={(event) => setReason(event.target.value)} minLength={10} maxLength={2000} required /></label><label className="check-row"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />Saya memastikan scope dan expiry request ini minimum yang diperlukan.</label><button className="primary" disabled={busy || !confirmed || !scopeReady || reason.trim().length < 10}>{busy ? 'Submitting…' : 'Submit request'}</button></form></Modal>
+  return <Drawer opened={opened} onClose={onClose} position="right" size="lg" title="New privileged access request">
+    <form onSubmit={(event) => void submit(event)}><Stack>
+      <Alert color="blue" title="Controlled workflow">MFA step-up dan approver yang berbeda wajib untuk assignment privileged.</Alert>
+      <Select label="Target employee" searchable required data={users.map((user) => ({ value: user.id, label: `${user.name} · ${user.mfa_enabled ? 'MFA ready' : 'MFA belum aktif'}` }))} value={targetId} onChange={(value) => { setTargetId(value); setDepartmentId(null); setLocationId(null); setConfirmed(false) }} />
+      {selectedUser && !selectedUser.mfa_enabled && <Alert color="orange" icon={<IconAlertTriangle size={17} />}>Request dapat dibuat, tetapi approval diblokir sampai target mengaktifkan MFA.</Alert>}
+      <Select label="Privileged role" required data={roles.map((role) => ({ value: role.id, label: `${role.name} · ${role.assignment_scope}` }))} value={roleId} onChange={(value) => { setRoleId(value); setDepartmentId(null); setLocationId(null); setConfirmed(false) }} />
+      {selectedRole?.description && <Text size="sm" c="dimmed">{selectedRole.description}</Text>}
+      {selectedRole?.assignment_scope === 'department' && <Select label="Department" required data={availableDepartments.map((item) => ({ value: item.id, label: item.name }))} value={departmentId} onChange={setDepartmentId} />}
+      {selectedRole?.assignment_scope === 'location' && <><Select label="Location" required data={availableLocations.map((item) => ({ value: item.id, label: item.name }))} value={locationId} onChange={setLocationId} /><Select label="Department restriction" clearable data={availableDepartments.map((item) => ({ value: item.id, label: item.name }))} value={departmentId} onChange={setDepartmentId} /></>}
+      <TextInput type="datetime-local" label="Valid until" min={localDateTime(0)} max={localDateTime(89)} value={validUntil} onChange={(event) => setValidUntil(event.currentTarget.value)} required />
+      <Textarea label="Business justification" minRows={4} minLength={10} maxLength={2000} value={reason} onChange={(event) => setReason(event.currentTarget.value)} required />
+      <Checkbox checked={confirmed} onChange={(event) => setConfirmed(event.currentTarget.checked)} label="Saya memastikan scope dan expiry request ini minimum yang diperlukan." />
+      <Button type="submit" loading={busy} disabled={!confirmed || !scopeReady || reason.trim().length < 10}>Submit request</Button>
+    </Stack></form>
+  </Drawer>
 }
 
 function DecisionDialog({ token, company, decision, onClose, onError, onCompleted }: { token: string; company: Company; decision: { request: AccessRequest; action: 'approve' | 'reject' }; onClose: () => void; onError: (error: unknown) => void; onCompleted: () => Promise<void> }) {
@@ -237,7 +263,7 @@ function DecisionDialog({ token, company, decision, onClose, onError, onComplete
       await onCompleted()
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
-  return <Modal title={`${decision.action === 'approve' ? 'Approve' : 'Reject'} access request`} subtitle={`${decision.request.target_user.name} · ${decision.request.role.name}`} onClose={onClose}><div className="decision-context"><span>Requested by {decision.request.requested_by.name}</span><p>{decision.request.reason}</p><strong>Expires {displayDateTime(decision.request.valid_until)}</strong></div><form className="stack-form" onSubmit={(event) => void submit(event)}><label>Decision note<textarea value={note} onChange={(event) => setNote(event.target.value)} minLength={10} required /></label><label className="check-row"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />Saya sudah memverifikasi target, role, scope, dan expiry.</label><button className={decision.action === 'approve' ? 'primary' : 'danger'} disabled={busy || !confirmed || note.trim().length < 10}>{busy ? 'Processing…' : decision.action === 'approve' ? 'Approve access' : 'Reject request'}</button></form></Modal>
+  return <Modal opened onClose={onClose} title={`${decision.action === 'approve' ? 'Approve' : 'Reject'} access request`} centered><form onSubmit={(event) => void submit(event)}><Stack><Text size="sm"><strong>{decision.request.target_user.name}</strong> · {decision.request.role.name}</Text><Text size="sm" p="sm" bg="gray.0">{decision.request.reason}</Text><Text size="xs" c="dimmed">Requested by {decision.request.requested_by.name} · expires {displayDateTime(decision.request.valid_until)}</Text><Textarea label="Decision note" minRows={3} minLength={10} value={note} onChange={(event) => setNote(event.currentTarget.value)} required /><Checkbox checked={confirmed} onChange={(event) => setConfirmed(event.currentTarget.checked)} label="Saya sudah memverifikasi target, role, scope, dan expiry." /><Button type="submit" color={decision.action === 'approve' ? 'forest' : 'red'} loading={busy} disabled={!confirmed || note.trim().length < 10}>{decision.action === 'approve' ? 'Approve access' : 'Reject request'}</Button></Stack></form></Modal>
 }
 
 function RevocationDialog({ token, company, assignment, onClose, onError, onCompleted }: { token: string; company: Company; assignment: RoleAssignment; onClose: () => void; onError: (error: unknown) => void; onCompleted: () => Promise<void> }) {
@@ -251,24 +277,14 @@ function RevocationDialog({ token, company, assignment, onClose, onError, onComp
       await onCompleted()
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
-  return <Modal title="Revoke privileged assignment" subtitle={`${assignment.user.name} · ${assignment.role.name}`} onClose={onClose}><div className="inline-warning">Revocation langsung mencabut assignment, seluruh web session, dan mobile refresh-token family milik target.</div><form className="stack-form" onSubmit={(event) => void submit(event)}><label>Revocation reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} minLength={10} required /></label><label className="check-row"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />Saya memahami dampak immediate revocation ini.</label><button className="danger" disabled={busy || !confirmed || reason.trim().length < 10}>{busy ? 'Revoking…' : 'Revoke access immediately'}</button></form></Modal>
+  return <Modal opened onClose={onClose} title="Revoke privileged assignment" centered><form onSubmit={(event) => void submit(event)}><Stack><Alert color="red" icon={<IconAlertTriangle size={17} />}>Revocation langsung mencabut assignment, seluruh web session, dan mobile refresh-token family milik target.</Alert><Text size="sm"><strong>{assignment.user.name}</strong> · {assignment.role.name}</Text><Textarea label="Revocation reason" minRows={3} minLength={10} value={reason} onChange={(event) => setReason(event.currentTarget.value)} required /><Checkbox checked={confirmed} onChange={(event) => setConfirmed(event.currentTarget.checked)} label="Saya memahami dampak immediate revocation ini." /><Button type="submit" color="red" loading={busy} disabled={!confirmed || reason.trim().length < 10}>Revoke access immediately</Button></Stack></form></Modal>
 }
 
-function Modal({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: ReactNode }) {
-  useEffect(() => {
-    const close = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
-    document.addEventListener('keydown', close)
-    return () => document.removeEventListener('keydown', close)
-  }, [onClose])
-
-  return <div className="drawer-backdrop" onMouseDown={onClose}><aside className="drawer access-drawer" role="dialog" aria-modal="true" aria-labelledby="access-dialog-title" onMouseDown={(event) => event.stopPropagation()}><header><div className="auth-mark">◇</div><div><p className="eyebrow">Access governance</p><h2 id="access-dialog-title">{title}</h2><span>{subtitle}</span></div><button className="close" onClick={onClose} aria-label="Tutup dialog" autoFocus>×</button></header><div className="drawer-body">{children}</div></aside></div>
+function EmptyState({ title, detail }: { title: string; detail: string }) {
+  return <Stack align="center" py={60} px="md" gap="xs"><ThemeIcon variant="light" size={48} radius="xl"><IconClipboardCheck size={24} /></ThemeIcon><Text fw={700}>{title}</Text><Text size="sm" c="dimmed" ta="center">{detail}</Text></Stack>
 }
 
-function StatusPill({ value }: { value: string }) {
-  return <span className={`badge ${value}`}>{value}</span>
-}
-
-function Pagination({ page, lastPage, busy, onPage }: { page: number; lastPage: number; busy: boolean; onPage: (page: number) => void }) {
+function Pager({ page, lastPage, onPage }: { page: number; lastPage: number; onPage: (page: number) => void }) {
   if (lastPage <= 1) return null
-  return <footer className="pagination"><span>Halaman {page} dari {lastPage}</span><div><button className="secondary" disabled={busy || page === 1} onClick={() => onPage(page - 1)}>Sebelumnya</button><button className="secondary" disabled={busy || page === lastPage} onClick={() => onPage(page + 1)}>Berikutnya</button></div></footer>
+  return <Group justify="space-between" p="md" className="card-footer"><Text size="sm" c="dimmed">Halaman {page} dari {lastPage}</Text><Pagination value={page} total={lastPage} onChange={onPage} size="sm" /></Group>
 }
