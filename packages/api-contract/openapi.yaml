@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.6.0
+  version: 0.7.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -432,11 +432,45 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "422":
           $ref: "#/components/responses/ValidationFailed"
+  /identity/users/{userId}/status:
+    patch:
+      operationId: changeIdentityStatus
+      summary: Change the global lifecycle status of one identity.
+      description: Requires the global identity.user.status.manage permission and MFA verified within 15 minutes. Self-change is denied; invited identities must use invitation acceptance; suspend and disable revoke all sessions.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeIdentityStatusRequest"
+      responses:
+        "200":
+          description: Identity status changed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/IdentitySummary"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
   /identity/users/{userId}/companies/{companyId}/terminate:
     post:
       operationId: terminateCompanyMembership
       summary: Terminate one company membership and revoke stale access.
-      description: Requires identity.user.manage in companyId. Self-termination is denied.
+      description: Requires identity.employment.manage in companyId. Self-termination is denied.
       security:
         - bearerAuth: []
       parameters:
@@ -470,6 +504,156 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: User, company, or active membership not found.
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/companies:
+    get:
+      operationId: listIdentityCompanies
+      summary: List legal entities visible to the current identity administrator.
+      description: Returns only companies where identity.user.view resolves, plus server-derived administration capabilities.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Visible legal entities and global capabilities.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityCompanyCollection"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /identity/companies/{companyId}/organization:
+    get:
+      operationId: getIdentityOrganization
+      summary: Return active departments and locations for one legal entity.
+      description: Requires identity.user.view in companyId.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+      responses:
+        "200":
+          description: Company organization catalog.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrganizationCatalog"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /identity/companies/{companyId}/users:
+    get:
+      operationId: listIdentityUsers
+      summary: Search and filter identities employed by one legal entity.
+      description: Requires identity.user.view in companyId. Historical and active employment records both establish directory membership.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/IdentityStatus"
+        - name: employment_status
+          in: query
+          schema:
+            $ref: "#/components/schemas/EmploymentStatus"
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Paginated company identity directory.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityUserPage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/users/{userId}:
+    get:
+      operationId: getIdentityUser
+      summary: Return company-scoped employment and organization history for one identity.
+      description: Requires identity.user.view in companyId. Cross-company records are never included.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Company-scoped identity detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/IdentityUser"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: User is not employed by the requested company.
+  /identity/companies/{companyId}/users/{userId}/organization-memberships:
+    put:
+      operationId: updateOrganizationMemberships
+      summary: Schedule a complete replacement of department and location memberships.
+      description: Requires identity.employment.manage in companyId. Existing memberships are closed one day before the effective date and retained as history.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrganizationMembershipsRequest"
+      responses:
+        "200":
+          description: Organization change scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationMembershipUpdateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Active employment does not exist in the requested company.
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationFailed"
   /identity/companies/{companyId}/access-requests:
@@ -977,8 +1161,241 @@ components:
           type: string
           format: email
         status:
+          $ref: "#/components/schemas/IdentityStatus"
+    IdentityStatus:
+      type: string
+      enum: [invited, active, suspended, disabled]
+    EmploymentStatus:
+      type: string
+      enum: [invited, active, leave, terminated]
+    IdentitySummary:
+      type: object
+      required: [id, name, email, status]
+      properties:
+        id:
           type: string
-          enum: [invited, active, suspended, disabled]
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          $ref: "#/components/schemas/IdentityStatus"
+    ChangeIdentityStatusRequest:
+      type: object
+      required: [status, reason]
+      properties:
+        status:
+          type: string
+          enum: [active, suspended, disabled]
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    CompanySummary:
+      type: object
+      required: [id, code, legal_name]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        legal_name:
+          type: string
+    IdentityCompanyCapabilities:
+      type: object
+      required: [can_view_users, can_invite_users, can_manage_employment]
+      properties:
+        can_view_users:
+          type: boolean
+        can_invite_users:
+          type: boolean
+        can_manage_employment:
+          type: boolean
+    IdentityCompany:
+      allOf:
+        - $ref: "#/components/schemas/CompanySummary"
+        - type: object
+          required: [capabilities]
+          properties:
+            capabilities:
+              $ref: "#/components/schemas/IdentityCompanyCapabilities"
+    IdentityCompanyCollection:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/IdentityCompany"
+        meta:
+          type: object
+          required: [can_manage_identity_status]
+          properties:
+            can_manage_identity_status:
+              type: boolean
+    DepartmentSummary:
+      type: object
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        parent_id:
+          type: [string, "null"]
+    LocationSummary:
+      type: object
+      required: [id, code, name, timezone]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        timezone:
+          type: string
+    OrganizationCatalog:
+      type: object
+      required: [company, departments, locations]
+      properties:
+        company:
+          $ref: "#/components/schemas/CompanySummary"
+        departments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DepartmentSummary"
+        locations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocationSummary"
+    CompanyMembership:
+      type: object
+      required: [id, employee_no, employment_status, is_primary, valid_from, valid_until]
+      properties:
+        id:
+          type: string
+        employee_no:
+          type: [string, "null"]
+        employment_status:
+          $ref: "#/components/schemas/EmploymentStatus"
+        is_primary:
+          type: boolean
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: [string, "null"]
+          format: date
+    DepartmentMembership:
+      type: object
+      required: [id, department, is_primary, valid_from, valid_until]
+      properties:
+        id:
+          type: string
+        department:
+          $ref: "#/components/schemas/DepartmentSummary"
+        is_primary:
+          type: boolean
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: [string, "null"]
+          format: date
+    LocationMembership:
+      type: object
+      required: [id, location, valid_from, valid_until]
+      properties:
+        id:
+          type: string
+        location:
+          $ref: "#/components/schemas/LocationSummary"
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: [string, "null"]
+          format: date
+    IdentityUser:
+      allOf:
+        - $ref: "#/components/schemas/IdentitySummary"
+        - type: object
+          required: [last_login_at, company_memberships, department_memberships, location_memberships]
+          properties:
+            last_login_at:
+              type: [string, "null"]
+              format: date-time
+            company_memberships:
+              type: array
+              items:
+                $ref: "#/components/schemas/CompanyMembership"
+            department_memberships:
+              type: array
+              items:
+                $ref: "#/components/schemas/DepartmentMembership"
+            location_memberships:
+              type: array
+              items:
+                $ref: "#/components/schemas/LocationMembership"
+    IdentityUserPage:
+      type: object
+      required: [data, current_page, per_page, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/IdentityUser"
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        last_page:
+          type: integer
+        from:
+          type: [integer, "null"]
+        to:
+          type: [integer, "null"]
+    UpdateOrganizationMembershipsRequest:
+      type: object
+      required: [department_ids, primary_department_id, location_ids, effective_from, reason]
+      properties:
+        department_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+        primary_department_id:
+          type: string
+          description: Must be included in department_ids.
+        location_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        effective_from:
+          type: string
+          format: date
+          description: Today or a future date; must not conflict with an existing scheduled change.
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    OrganizationMembershipUpdateResponse:
+      type: object
+      required: [status, effective_from]
+      properties:
+        status:
+          const: scheduled
+        effective_from:
+          type: string
+          format: date
     AccessRequestStatus:
       type: string
       enum: [pending, approved, rejected, cancelled]

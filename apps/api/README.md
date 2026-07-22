@@ -31,14 +31,21 @@ API base URL: `http://localhost:8000/api/v1`.
 - `GET /auth/sessions` lists device sessions owned by the authenticated identity.
 - `DELETE /auth/sessions/{tokenId}` and `POST /auth/sessions/revoke-all` revoke device access and associated refresh families.
 - `GET /me` returns the active authenticated identity.
+- `GET /identity/companies` returns only legal entities visible to the administrator and server-derived UI capabilities.
+- `GET /identity/companies/{company}/organization` returns the active department and location catalog.
+- `GET /identity/companies/{company}/users` and `GET /identity/companies/{company}/users/{user}` expose a company-scoped identity directory and history.
+- `PUT /identity/companies/{company}/users/{user}/organization-memberships` requires `identity.employment.manage`; it schedules effective-dated organization changes without overwriting history.
+- `PATCH /identity/users/{user}/status` requires global `identity.user.status.manage` plus recent MFA; suspend/disable revoke all device sessions and mobile refresh families.
 - `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
-- `POST /identity/users/{user}/companies/{company}/terminate` terminates scoped employment and revokes stale access.
+- `POST /identity/users/{user}/companies/{company}/terminate` requires `identity.employment.manage`, terminates scoped employment, and revokes stale access.
 - `GET /identity/companies/{company}/access-requests` returns the scoped approval queue.
 - `POST /identity/companies/{company}/access-requests` creates a privileged request.
 - `POST /identity/companies/{company}/access-requests/{request}/approve|reject` applies maker-checker policy.
 - `POST /identity/companies/{company}/role-assignments/{assignment}/revoke` immediately revokes access and target tokens.
 
 Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. Privileged assignments cannot be approved until the target user has active MFA.
+
+Employment and organization placement are HR-owned through `identity.employment.manage`. IT/security owns global credential status through a global-only `identity.user.status.manage` assignment. A company-scoped role can never change global identity status, reactivation is rejected unless active employment exists, and an invited identity must complete invitation acceptance rather than being manually activated.
 
 Token idle timeout is enforced before Sanctum updates `last_used_at`: ERP Web 30 minutes, Operations Web 2 hours, and Mobile 15 minutes. Absolute lifetime remains 12 hours, 24 hours, and 15 minutes respectively.
 

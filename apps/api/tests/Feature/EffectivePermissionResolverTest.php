@@ -67,6 +67,31 @@ class EffectivePermissionResolverTest extends TestCase
         );
     }
 
+    public function test_global_permission_applies_across_companies_without_company_employment(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::query()->create(['code' => 'A', 'legal_name' => 'Company A']);
+        $permission = Permission::query()->create([
+            'code' => 'identity.user.view',
+            'module' => 'identity',
+            'resource' => 'user',
+            'action' => 'view',
+        ]);
+        $role = Role::query()->create(['code' => 'security-admin', 'name' => 'Security Administrator']);
+        $role->permissions()->attach($permission);
+        UserRoleAssignment::query()->create([
+            'user_id' => $user->id,
+            'role_id' => $role->id,
+            'valid_from' => now(),
+            'assigned_by' => $user->id,
+        ]);
+
+        $resolver = app(EffectivePermissionResolver::class);
+
+        $this->assertTrue($resolver->allowsGlobal($user, 'identity.user.view'));
+        $this->assertTrue($resolver->allows($user, 'identity.user.view', $company->id));
+    }
+
     public function test_location_scoped_permission_requires_active_location_membership(): void
     {
         $user = User::factory()->create();

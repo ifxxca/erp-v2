@@ -45,6 +45,8 @@ class FoundationSeeder extends Seeder
         $permissions = collect([
             ['identity.user.view', 'identity', 'user', 'view'],
             ['identity.user.manage', 'identity', 'user', 'manage'],
+            ['identity.user.status.manage', 'identity', 'user-status', 'manage'],
+            ['identity.employment.manage', 'identity', 'employment', 'manage'],
             ['identity.access.assign', 'identity', 'access', 'assign'],
             ['identity.access.request', 'identity', 'access', 'request'],
             ['identity.access.approve', 'identity', 'access', 'approve'],
@@ -70,6 +72,7 @@ class FoundationSeeder extends Seeder
         $roles = [
             'platform-admin' => ['Platform Administrator', true],
             'security-admin' => ['Security Administrator', true],
+            'hr-administrator' => ['HR Administrator', true],
             'management-access-owner' => ['Management Access Owner', true],
             'department-manager' => ['Department Manager', false],
             'fleet-manager' => ['Fleet Manager', false],
@@ -92,10 +95,16 @@ class FoundationSeeder extends Seeder
             ->only([
                 'identity.user.view',
                 'identity.user.manage',
+                'identity.user.status.manage',
                 'identity.access.request',
                 'identity.access.revoke',
                 'audit.log.view',
             ])
+            ->pluck('id'));
+
+        Role::query()->where('code', 'hr-administrator')->firstOrFail()
+            ->permissions()->syncWithoutDetaching($permissions
+            ->only(['identity.user.view', 'identity.employment.manage'])
             ->pluck('id'));
 
         Role::query()->where('code', 'management-access-owner')->firstOrFail()

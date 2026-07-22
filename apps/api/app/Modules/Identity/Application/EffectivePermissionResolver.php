@@ -7,6 +7,21 @@ use Illuminate\Database\Eloquent\Builder;
 
 class EffectivePermissionResolver
 {
+    public function allowsGlobal(User $user, string $permissionCode): bool
+    {
+        if ($user->status !== 'active') {
+            return false;
+        }
+
+        return $user->roleAssignments()
+            ->active()
+            ->whereNull('company_id')
+            ->whereNull('department_id')
+            ->whereNull('location_id')
+            ->whereHas('role.permissions', fn (Builder $query) => $query->where('code', $permissionCode))
+            ->exists();
+    }
+
     public function allows(
         User $user,
         string $permissionCode,
@@ -16,6 +31,10 @@ class EffectivePermissionResolver
     ): bool {
         if ($user->status !== 'active') {
             return false;
+        }
+
+        if ($this->allowsGlobal($user, $permissionCode)) {
+            return true;
         }
 
         $hasActiveCompanyMembership = $user->companyMemberships()

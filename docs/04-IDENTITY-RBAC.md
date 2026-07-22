@@ -75,6 +75,7 @@ Role berikut adalah seed awal, bukan role permanen yang tidak bisa disesuaikan:
 |---|---|---|
 | `platform-admin` | global | Konfigurasi teknis, bukan approval bisnis |
 | `security-admin` | global | User, role, permission, dan access review |
+| `hr-administrator` | company | Employment, department, dan location membership |
 | `department-manager` | department | Review dan approval dalam department |
 | `procurement-officer` | department | PR, sourcing, dan PO |
 | `finance-officer` | company/location | Schedule, payment, reconciliation |
@@ -91,7 +92,7 @@ Tidak ada role `super_admin` yang secara implisit melewati semua policy. Aksi te
 
 | Module | Permission contoh |
 |---|---|
-| Identity | `identity.user.view`, `identity.user.manage`, `identity.access.assign` |
+| Identity | `identity.user.view`, `identity.user.manage`, `identity.user.status.manage` (global-only), `identity.employment.manage`, `identity.access.request`, `.approve`, `.revoke` |
 | Procurement | `procurement.purchase-request.create`, `.view`, `.submit`, `.approve`; `procurement.purchase-order.issue` |
 | Finance | `finance.payment-schedule.view`, `.manage`; `finance.payment.post`, `.reverse` |
 | Inventory | `inventory.receipt.create`, `.confirm`; `inventory.movement.create`; `inventory.stock-count.approve` |
@@ -183,7 +184,10 @@ Delegasi approval harus memiliki rentang tanggal dan tercatat sebagai assignment
 ## Employment ownership
 
 - HR memelihara roster employment V2 sebagai source of truth sampai ada HRIS.
+- `identity.employment.manage` memberi hak company-scoped untuk mengubah employment dan organization membership; perubahan memakai effective date dan tidak menimpa histori.
 - IT mengelola identity/credential, tetapi tidak dapat mengaktifkan employment yang ditutup HR.
+- `identity.user.status.manage` hanya sah pada assignment global; company, department, atau location scope tidak pernah cukup untuk suspend, disable, atau re-enable identity global.
+- Re-enable identity ditolak jika tidak ada active employment pada legal entity mana pun.
 - Company membership, department membership, dan role assignment memiliki effective dates terpisah.
 - Termination menutup membership dan mencabut session/token pada effective time tanpa menghapus histori actor.
 

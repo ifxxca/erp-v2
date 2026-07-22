@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
+use App\Http\Controllers\Api\V1\IdentityCompanyController;
+use App\Http\Controllers\Api\V1\IdentityUserController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MfaController;
 use App\Http\Controllers\Api\V1\MobileTokenController;
+use App\Http\Controllers\Api\V1\OrganizationMembershipController;
 use App\Http\Controllers\Api\V1\PasswordRecoveryController;
 use App\Http\Controllers\Api\V1\PrivilegedAccessController;
 use App\Http\Controllers\Api\V1\SessionController;
@@ -46,12 +49,24 @@ Route::prefix('v1')->group(function (): void {
 
             Route::post('/identity/users/invitations', [InvitationController::class, 'store'])
                 ->middleware('permission.scoped:identity.user.manage');
+            Route::patch('/identity/users/{user}/status', [IdentityUserController::class, 'changeStatus'])
+                ->middleware(['permission.global:identity.user.status.manage', 'mfa.recent']);
             Route::post(
                 '/identity/users/{user}/companies/{company}/terminate',
                 [CompanyMembershipController::class, 'terminate'],
-            )->middleware('permission.scoped:identity.user.manage');
+            )->middleware('permission.scoped:identity.employment.manage');
+
+            Route::get('/identity/companies', [IdentityCompanyController::class, 'index']);
 
             Route::prefix('/identity/companies/{company}')->group(function (): void {
+                Route::get('/organization', [IdentityCompanyController::class, 'organization'])
+                    ->middleware('permission.scoped:identity.user.view');
+                Route::get('/users', [IdentityUserController::class, 'index'])
+                    ->middleware('permission.scoped:identity.user.view');
+                Route::get('/users/{user}', [IdentityUserController::class, 'show'])
+                    ->middleware('permission.scoped:identity.user.view');
+                Route::put('/users/{user}/organization-memberships', [OrganizationMembershipController::class, 'update'])
+                    ->middleware('permission.scoped:identity.employment.manage');
                 Route::get('/access-requests', [PrivilegedAccessController::class, 'index'])
                     ->middleware('permission.scoped:identity.access.approve');
                 Route::post('/access-requests', [PrivilegedAccessController::class, 'store'])

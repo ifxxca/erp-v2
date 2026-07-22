@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureActiveIdentity;
 use App\Http\Middleware\EnsureMfaAuthenticated;
+use App\Http\Middleware\RequireGlobalPermission;
 use App\Http\Middleware\RequireRecentMfa;
 use App\Http\Middleware\RequireScopedPermission;
 use App\Modules\Identity\Application\AccessGovernanceException;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mfa.authenticated' => EnsureMfaAuthenticated::class,
             'mfa.recent' => RequireRecentMfa::class,
             'permission.scoped' => RequireScopedPermission::class,
+            'permission.global' => RequireGlobalPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

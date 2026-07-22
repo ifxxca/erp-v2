@@ -51,8 +51,8 @@ class FoundationSchemaTest extends TestCase
 
         $this->assertSame(2, Company::query()->count());
         $this->assertSame(16, Department::query()->count());
-        $this->assertSame(7, Role::query()->count());
-        $this->assertSame(13, Permission::query()->count());
+        $this->assertSame(8, Role::query()->count());
+        $this->assertSame(15, Permission::query()->count());
     }
 
     public function test_users_use_ulids_and_are_active_only_when_explicitly_created_active(): void

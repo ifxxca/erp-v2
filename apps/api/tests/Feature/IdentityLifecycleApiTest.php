@@ -251,17 +251,20 @@ class IdentityLifecycleApiTest extends TestCase
     private function grantUserManagement(User $actor, Company $company): void
     {
         $this->createActiveMembership($actor, $company);
-        $permission = Permission::query()->create([
-            'code' => 'identity.user.manage',
+        $permissions = collect([
+            ['identity.user.manage', 'user'],
+            ['identity.employment.manage', 'employment'],
+        ])->map(fn (array $definition) => Permission::query()->create([
+            'code' => $definition[0],
             'module' => 'identity',
-            'resource' => 'user',
+            'resource' => $definition[1],
             'action' => 'manage',
-        ]);
+        ]));
         $role = Role::query()->create([
             'code' => 'security-admin',
             'name' => 'Security Administrator',
         ]);
-        $role->permissions()->attach($permission);
+        $role->permissions()->attach($permissions);
         UserRoleAssignment::query()->create([
             'user_id' => $actor->id,
             'role_id' => $role->id,
