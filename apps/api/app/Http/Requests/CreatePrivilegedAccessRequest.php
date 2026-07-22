@@ -22,7 +22,13 @@ class CreatePrivilegedAccessRequest extends FormRequest
 
         return [
             'target_user_id' => ['required', 'ulid', Rule::exists('users', 'id')->where('status', 'active')],
-            'role_id' => ['required', 'ulid', Rule::exists('roles', 'id')->where('is_privileged', true)],
+            'role_id' => [
+                'required',
+                'ulid',
+                Rule::exists('roles', 'id')->where(fn ($query) => $query
+                    ->where('is_privileged', true)
+                    ->whereIn('assignment_scope', ['company', 'department', 'location'])),
+            ],
             'department_id' => [
                 'nullable',
                 'ulid',

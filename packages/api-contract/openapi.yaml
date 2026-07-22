@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.7.0
+  version: 0.8.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -669,6 +669,12 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/AccessRequestStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
       responses:
         "200":
           description: Paginated access requests.
@@ -709,6 +715,52 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/access-requests/mine:
+    get:
+      operationId: listMyPrivilegedAccessRequests
+      summary: List privileged-access requests created by the current user.
+      description: Requires identity.access.request in companyId and never returns another maker's history.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Paginated maker request history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequestPage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /identity/companies/{companyId}/access-catalog:
+    get:
+      operationId: getPrivilegedAccessCatalog
+      summary: Return eligible target users and company-assignable privileged roles.
+      description: Requires identity.access.request. Global-only roles are intentionally excluded and organization membership IDs constrain the available scope choices.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+      responses:
+        "200":
+          description: Privileged-access request catalog.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessCatalogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /identity/companies/{companyId}/access-requests/{accessRequestId}/approve:
     post:
       operationId: approvePrivilegedAccessRequest
@@ -807,6 +859,32 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/role-assignments:
+    get:
+      operationId: listActivePrivilegedRoleAssignments
+      summary: List active privileged assignments available for emergency revocation.
+      description: Requires identity.access.revoke in companyId.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Paginated active privileged assignments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleAssignmentPage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 components:
   securitySchemes:
     cookieAuth:
@@ -1204,13 +1282,25 @@ components:
           type: string
     IdentityCompanyCapabilities:
       type: object
-      required: [can_view_users, can_invite_users, can_manage_employment]
+      required:
+        - can_view_users
+        - can_invite_users
+        - can_manage_employment
+        - can_request_access
+        - can_approve_access
+        - can_revoke_access
       properties:
         can_view_users:
           type: boolean
         can_invite_users:
           type: boolean
         can_manage_employment:
+          type: boolean
+        can_request_access:
+          type: boolean
+        can_approve_access:
+          type: boolean
+        can_revoke_access:
           type: boolean
     IdentityCompany:
       allOf:
@@ -1407,7 +1497,7 @@ components:
           type: string
         role_id:
           type: string
-          description: Must identify a role currently classified as privileged.
+          description: Must identify a privileged role whose assignment_scope is company, department, or location; global-only roles are rejected.
         department_id:
           type: [string, "null"]
         location_id:
@@ -1445,6 +1535,7 @@ components:
         - id
         - status
         - target_user
+        - target_mfa_enabled
         - role
         - company_id
         - reason
@@ -1457,6 +1548,9 @@ components:
           $ref: "#/components/schemas/AccessRequestStatus"
         target_user:
           $ref: "#/components/schemas/UserSummary"
+        target_mfa_enabled:
+          type: boolean
+          description: Current MFA readiness snapshot for approval UX; the approval mutation revalidates server-side.
         role:
           $ref: "#/components/schemas/RoleSummary"
         company_id:
@@ -1502,6 +1596,93 @@ components:
           type: string
         name:
           type: string
+    RoleAssignmentScope:
+      type: string
+      enum: [global, company, department, location]
+    AccessCatalogUser:
+      allOf:
+        - $ref: "#/components/schemas/UserSummary"
+        - type: object
+          required: [email, mfa_enabled, department_ids, location_ids]
+          properties:
+            mfa_enabled:
+              type: boolean
+            department_ids:
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+            location_ids:
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+    AccessCatalogRole:
+      allOf:
+        - $ref: "#/components/schemas/RoleSummary"
+        - type: object
+          required: [description, assignment_scope]
+          properties:
+            description:
+              type: [string, "null"]
+            assignment_scope:
+              type: string
+              enum: [company, department, location]
+    AccessCatalogResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [users, roles]
+          properties:
+            users:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessCatalogUser"
+            roles:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessCatalogRole"
+    PrivilegedRoleAssignment:
+      type: object
+      required:
+        - id
+        - user
+        - role
+        - company_id
+        - department_id
+        - location_id
+        - access_request_id
+        - valid_from
+        - valid_until
+      properties:
+        id:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserSummary"
+        role:
+          allOf:
+            - $ref: "#/components/schemas/RoleSummary"
+            - type: object
+              required: [assignment_scope]
+              properties:
+                assignment_scope:
+                  $ref: "#/components/schemas/RoleAssignmentScope"
+        company_id:
+          type: string
+        department_id:
+          type: [string, "null"]
+        location_id:
+          type: [string, "null"]
+        access_request_id:
+          type: [string, "null"]
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: [string, "null"]
+          format: date-time
     AccessApprovalResponse:
       type: object
       required: [access_request_id, assignment_id, status, valid_until]
@@ -1528,13 +1709,31 @@ components:
           format: date-time
     AccessRequestPage:
       type: object
-      required: [data, current_page, per_page, total]
+      required: [data, current_page, last_page, per_page, total]
       properties:
         data:
           type: array
           items:
             $ref: "#/components/schemas/PrivilegedAccessRequest"
         current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    RoleAssignmentPage:
+      type: object
+      required: [data, current_page, last_page, per_page, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrivilegedRoleAssignment"
+        current_page:
+          type: integer
+        last_page:
           type: integer
         per_page:
           type: integer

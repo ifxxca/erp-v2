@@ -133,6 +133,7 @@ erDiagram
         string description
         boolean is_system
         boolean is_privileged
+        enum assignment_scope
     }
     PERMISSIONS {
         uuid id PK
@@ -234,7 +235,8 @@ Aturan penting:
 - Kode department dan location unik di dalam company, bukan global.
 - Satu user boleh menjadi anggota beberapa departemen, tetapi hanya satu membership aktif yang primary.
 - Location membership selalu eksplisit dan tidak diwariskan dari department.
-- Role assignment selalu memiliki company scope; di dalamnya dapat dibatasi lagi berdasarkan departemen dan/atau lokasi.
+- Setiap role mendeklarasikan `assignment_scope`: `global`, `company`, `department`, atau `location`. Request company-scoped tidak dapat memakai role global, dan scope organisasi harus cocok dengan policy role.
+- Role assignment bisnis selalu memiliki company scope; di dalamnya dapat dibatasi lagi berdasarkan departemen dan/atau lokasi. Hanya role teknis yang ditetapkan `global` boleh memiliki assignment tanpa company.
 - Satu mobile refresh-token family mewakili satu perangkat; token lama tetap disimpan sebagai hash untuk mendeteksi replay tanpa menyimpan secret plaintext.
 - Assignment privileged hanya dibuat dari access request approved, memiliki expiry maksimum 90 hari, dan requester/target/approver harus berbeda.
 - TOTP secret terenkripsi, kode tidak dapat dipakai ulang, dan recovery code hanya disimpan sebagai hash sekali pakai.

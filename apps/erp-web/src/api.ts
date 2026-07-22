@@ -35,6 +35,9 @@ export type Company = {
     can_view_users: boolean
     can_invite_users: boolean
     can_manage_employment: boolean
+    can_request_access: boolean
+    can_approve_access: boolean
+    can_revoke_access: boolean
   }
 }
 
@@ -84,6 +87,59 @@ export type LoginResponse = {
   access_token: string
   expires_at: string
   mfa_required: boolean
+}
+
+export type AccessCatalogUser = {
+  id: string
+  name: string
+  email: string
+  mfa_enabled: boolean
+  department_ids: string[]
+  location_ids: string[]
+}
+
+export type AccessRole = {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  assignment_scope: 'company' | 'department' | 'location'
+}
+
+export type AccessRequest = {
+  id: string
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'
+  target_user: Pick<AccessCatalogUser, 'id' | 'name' | 'email'>
+  target_mfa_enabled: boolean
+  role: Pick<AccessRole, 'id' | 'code' | 'name'>
+  company_id: string
+  department_id: string | null
+  location_id: string | null
+  reason: string
+  valid_until: string
+  requested_by: { id: string; name: string }
+  decided_by: { id: string; name: string } | null
+  decided_at: string | null
+  decision_note: string | null
+}
+
+export type RoleAssignment = {
+  id: string
+  user: Pick<AccessCatalogUser, 'id' | 'name' | 'email'>
+  role: Pick<AccessRole, 'id' | 'code' | 'name' | 'assignment_scope'>
+  company_id: string
+  department_id: string | null
+  location_id: string | null
+  access_request_id: string | null
+  valid_from: string
+  valid_until: string | null
+}
+
+export type Page<T> = {
+  data: T[]
+  current_page: number
+  last_page: number
+  total: number
 }
 
 export async function apiRequest<T>(

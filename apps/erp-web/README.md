@@ -11,6 +11,14 @@ The first implemented workspace is Identity Administration:
 - global suspend, disable, and re-enable controls for security administrators;
 - destructive-action confirmation and responsive desktop/mobile layouts.
 
+The Privileged Access Review workspace adds:
+
+- capability-driven maker history, approval queue, and active assignment tabs;
+- target catalog constrained by active employment and organization memberships;
+- explicit role scope and expiry selection with MFA-readiness warnings;
+- maker/target/approver separation in the UI and API;
+- approve, reject, and immediate-revocation dialogs with required confirmation.
+
 ```powershell
 npm run dev:erp
 ```

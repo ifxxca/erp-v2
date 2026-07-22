@@ -42,6 +42,7 @@ class FoundationSchemaTest extends TestCase
         foreach ($expectedTables as $table) {
             $this->assertTrue(Schema::hasTable($table), "Missing table: {$table}");
         }
+        $this->assertTrue(Schema::hasColumn('roles', 'assignment_scope'));
     }
 
     public function test_foundation_seeder_is_repeatable(): void
@@ -53,6 +54,8 @@ class FoundationSchemaTest extends TestCase
         $this->assertSame(16, Department::query()->count());
         $this->assertSame(8, Role::query()->count());
         $this->assertSame(15, Permission::query()->count());
+        $this->assertSame('global', Role::query()->where('code', 'platform-admin')->value('assignment_scope'));
+        $this->assertSame('company', Role::query()->where('code', 'hr-administrator')->value('assignment_scope'));
     }
 
     public function test_users_use_ulids_and_are_active_only_when_explicitly_created_active(): void

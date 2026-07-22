@@ -4,6 +4,7 @@ namespace App\Modules\Identity\Application;
 
 use App\Models\AccessRequest;
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRoleAssignment;
 use App\Notifications\PrivilegedAccessNotification;
@@ -24,6 +25,7 @@ class PrivilegedAccessService
     public function request(Company $company, User $actor, array $data, Request $httpRequest): AccessRequest
     {
         $target = User::query()->findOrFail($data['target_user_id']);
+        $role = Role::query()->findOrFail($data['role_id']);
 
         if ($actor->is($target)) {
             throw new AccessGovernanceException(
@@ -38,6 +40,7 @@ class PrivilegedAccessService
             $data['department_id'] ?? null,
             $data['location_id'] ?? null,
         );
+        $this->assertRoleScope($role, $data['department_id'] ?? null, $data['location_id'] ?? null);
 
         $accessRequest = DB::transaction(function () use ($company, $actor, $target, $data, $httpRequest) {
             $duplicate = $this->scopeQuery(
@@ -154,6 +157,11 @@ class PrivilegedAccessService
                     Response::HTTP_CONFLICT,
                 );
             }
+            $this->assertRoleScope(
+                $accessRequest->role,
+                $accessRequest->department_id,
+                $accessRequest->location_id,
+            );
             $this->assertActiveTargetScope(
                 $accessRequest->targetUser,
                 $company,
@@ -379,6 +387,23 @@ class PrivilegedAccessService
             throw new AccessGovernanceException(
                 'The target user does not have active membership for the requested scope.',
                 'ACCESS_TARGET_SCOPE_INACTIVE',
+            );
+        }
+    }
+
+    private function assertRoleScope(Role $role, ?string $departmentId, ?string $locationId): void
+    {
+        $scopeIsValid = match ($role->assignment_scope) {
+            'company' => ! $departmentId && ! $locationId,
+            'department' => (bool) $departmentId && ! $locationId,
+            'location' => (bool) $locationId,
+            default => false,
+        };
+
+        if (! $scopeIsValid) {
+            throw new AccessGovernanceException(
+                'The requested organization scope is not valid for this role.',
+                'ACCESS_ROLE_SCOPE_INVALID',
             );
         }
     }

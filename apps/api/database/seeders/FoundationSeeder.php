@@ -70,20 +70,25 @@ class FoundationSeeder extends Seeder
         });
 
         $roles = [
-            'platform-admin' => ['Platform Administrator', true],
-            'security-admin' => ['Security Administrator', true],
-            'hr-administrator' => ['HR Administrator', true],
-            'management-access-owner' => ['Management Access Owner', true],
-            'department-manager' => ['Department Manager', false],
-            'fleet-manager' => ['Fleet Manager', false],
-            'maintenance-officer' => ['Maintenance Officer', false],
-            'auditor' => ['Auditor', true],
+            'platform-admin' => ['Platform Administrator', true, 'global'],
+            'security-admin' => ['Security Administrator', true, 'global'],
+            'hr-administrator' => ['HR Administrator', true, 'company'],
+            'management-access-owner' => ['Management Access Owner', true, 'company'],
+            'department-manager' => ['Department Manager', false, 'department'],
+            'fleet-manager' => ['Fleet Manager', false, 'location'],
+            'maintenance-officer' => ['Maintenance Officer', false, 'location'],
+            'auditor' => ['Auditor', true, 'global'],
         ];
 
-        foreach ($roles as $code => [$name, $isPrivileged]) {
-            Role::query()->firstOrCreate(
+        foreach ($roles as $code => [$name, $isPrivileged, $assignmentScope]) {
+            Role::query()->updateOrCreate(
                 ['code' => $code],
-                ['name' => $name, 'is_system' => true, 'is_privileged' => $isPrivileged],
+                [
+                    'name' => $name,
+                    'is_system' => true,
+                    'is_privileged' => $isPrivileged,
+                    'assignment_scope' => $assignmentScope,
+                ],
             );
         }
 

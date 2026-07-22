@@ -51,6 +51,7 @@ RBAC menjawab "boleh melakukan aksi apa". Domain policy tetap menjawab "boleh me
 
 - Role adalah kumpulan permission yang dapat dikelola secara terkendali.
 - Permission adalah capability stabil dengan pola `module.resource.action`.
+- Role mendeklarasikan `assignment_scope` (`global`, `company`, `department`, atau `location`); request tidak boleh memilih scope yang lebih luas atau berbeda dari policy tersebut.
 - Role system tidak dapat dihapus; perubahan permission-nya harus melalui review dan audit.
 - UI menu tidak menjadi pengaman. API selalu melakukan authorization sendiri.
 

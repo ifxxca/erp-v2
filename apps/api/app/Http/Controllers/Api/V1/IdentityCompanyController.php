@@ -41,6 +41,21 @@ class IdentityCompanyController extends Controller
                             'identity.employment.manage',
                             $company->id,
                         ),
+                        'can_request_access' => $this->permissions->allows(
+                            $user,
+                            'identity.access.request',
+                            $company->id,
+                        ),
+                        'can_approve_access' => $this->permissions->allows(
+                            $user,
+                            'identity.access.approve',
+                            $company->id,
+                        ),
+                        'can_revoke_access' => $this->permissions->allows(
+                            $user,
+                            'identity.access.revoke',
+                            $company->id,
+                        ),
                     ],
                 ];
             })

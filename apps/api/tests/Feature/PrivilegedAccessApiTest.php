@@ -61,7 +61,8 @@ class PrivilegedAccessApiTest extends TestCase
                 'valid_until' => $validUntil->toIso8601String(),
             ])
             ->assertCreated()
-            ->assertJsonPath('status', 'pending');
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('target_mfa_enabled', true);
 
         $accessRequestId = $requestResponse->json('id');
         $this->withToken($this->tokenFor($approver))

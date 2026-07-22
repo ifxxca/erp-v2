@@ -69,6 +69,10 @@ Route::prefix('v1')->group(function (): void {
                     ->middleware('permission.scoped:identity.employment.manage');
                 Route::get('/access-requests', [PrivilegedAccessController::class, 'index'])
                     ->middleware('permission.scoped:identity.access.approve');
+                Route::get('/access-requests/mine', [PrivilegedAccessController::class, 'mine'])
+                    ->middleware('permission.scoped:identity.access.request');
+                Route::get('/access-catalog', [PrivilegedAccessController::class, 'catalog'])
+                    ->middleware('permission.scoped:identity.access.request');
                 Route::post('/access-requests', [PrivilegedAccessController::class, 'store'])
                     ->middleware(['permission.scoped:identity.access.request', 'mfa.recent']);
                 Route::post('/access-requests/{accessRequest}/approve', [PrivilegedAccessController::class, 'approve'])
@@ -77,6 +81,8 @@ Route::prefix('v1')->group(function (): void {
                     ->middleware(['permission.scoped:identity.access.approve', 'mfa.recent']);
                 Route::post('/role-assignments/{assignment}/revoke', [PrivilegedAccessController::class, 'revoke'])
                     ->middleware(['permission.scoped:identity.access.revoke', 'mfa.recent']);
+                Route::get('/role-assignments', [PrivilegedAccessController::class, 'assignments'])
+                    ->middleware('permission.scoped:identity.access.revoke');
             });
         });
     });

@@ -39,11 +39,16 @@ API base URL: `http://localhost:8000/api/v1`.
 - `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
 - `POST /identity/users/{user}/companies/{company}/terminate` requires `identity.employment.manage`, terminates scoped employment, and revokes stale access.
 - `GET /identity/companies/{company}/access-requests` returns the scoped approval queue.
+- `GET /identity/companies/{company}/access-requests/mine` returns only the current maker's request history.
+- `GET /identity/companies/{company}/access-catalog` returns eligible active targets, their organization memberships/MFA readiness, and non-global privileged roles.
 - `POST /identity/companies/{company}/access-requests` creates a privileged request.
 - `POST /identity/companies/{company}/access-requests/{request}/approve|reject` applies maker-checker policy.
+- `GET /identity/companies/{company}/role-assignments` returns active privileged assignments for authorized revokers.
 - `POST /identity/companies/{company}/role-assignments/{assignment}/revoke` immediately revokes access and target tokens.
 
 Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. Privileged assignments cannot be approved until the target user has active MFA.
+
+Every role declares an `assignment_scope`. Company access requests reject global-only roles and validate that company, department, or location scope matches the role policy and the target's active organization membership.
 
 Employment and organization placement are HR-owned through `identity.employment.manage`. IT/security owns global credential status through a global-only `identity.user.status.manage` assignment. A company-scoped role can never change global identity status, reactivation is rejected unless active employment exists, and an invited identity must complete invitation acceptance rather than being manually activated.
 

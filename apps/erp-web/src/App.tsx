@@ -1,5 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
+import AccessReview from './AccessReview'
 import {
   ApiError,
   apiRequest,
@@ -11,6 +12,7 @@ import {
 } from './api'
 
 type AuthStage = 'login' | 'mfa' | 'loading' | 'ready'
+type Workspace = 'identity' | 'access'
 
 type CompanyResponse = {
   data: Company[]
@@ -37,6 +39,7 @@ function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('erp_access_token') ?? '')
   const [stage, setStage] = useState<AuthStage>(token ? 'loading' : 'login')
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [workspace, setWorkspace] = useState<Workspace>('identity')
   const [companies, setCompanies] = useState<Company[]>([])
   const [canManageStatus, setCanManageStatus] = useState(false)
   const [companyId, setCompanyId] = useState('')
@@ -55,6 +58,11 @@ function App() {
   const [error, setError] = useState('')
 
   const activeCompany = companies.find((company) => company.id === companyId) ?? null
+  const canAccessReview = Boolean(activeCompany && (
+    activeCompany.capabilities.can_request_access
+    || activeCompany.capabilities.can_approve_access
+    || activeCompany.capabilities.can_revoke_access
+  ))
 
   const resetSession = useCallback(() => {
     sessionStorage.removeItem('erp_access_token')
@@ -178,8 +186,8 @@ function App() {
       <aside className="sidebar">
         <div className="brand"><span>R</span><div>Rajawali<small>Platform V2</small></div></div>
         <nav aria-label="Navigasi utama">
-          <button className="nav-item active"><span>◫</span>Identity</button>
-          <button className="nav-item" disabled><span>◇</span>Access review</button>
+          <button className={`nav-item ${workspace === 'identity' ? 'active' : ''}`} onClick={() => setWorkspace('identity')}><span>◫</span>Identity</button>
+          <button className={`nav-item ${workspace === 'access' ? 'active' : ''}`} disabled={!canAccessReview} onClick={() => { setSelectedUser(null); setWorkspace('access') }}><span>◇</span>Access review</button>
           <button className="nav-item" disabled><span>⌁</span>Audit log</button>
         </nav>
         <div className="session-card">
@@ -191,18 +199,18 @@ function App() {
 
       <main className="workspace">
         <header className="topbar">
-          <div><p className="eyebrow">Identity administration</p><h1>Employee directory</h1></div>
+          <div><p className="eyebrow">{workspace === 'identity' ? 'Identity administration' : 'Access governance'}</p><h1>{workspace === 'identity' ? 'Employee directory' : 'Privileged access review'}</h1></div>
           <label className="company-picker">Legal entity
-            <select value={companyId} onChange={(event) => { setPage(1); setCompanyId(event.target.value) }}>
+            <select value={companyId} onChange={(event) => { setPage(1); setSelectedUser(null); setCompanyId(event.target.value) }}>
               {companies.map((company) => <option key={company.id} value={company.id}>{company.code} · {company.legal_name}</option>)}
             </select>
           </label>
         </header>
 
-        {message && <div className="notice success">{message}<button onClick={() => setMessage('')}>×</button></div>}
-        {error && <div className="notice error">{error}<button onClick={() => setError('')}>×</button></div>}
+        {message && <div className="notice success" role="status">{message}<button onClick={() => setMessage('')}>×</button></div>}
+        {error && <div className="notice error" role="alert">{error}<button onClick={() => setError('')}>×</button></div>}
 
-        <section className="summary-grid">
+        {workspace === 'identity' && <><section className="summary-grid">
           <article><span>Visible identities</span><strong>{totalUsers}</strong><small>Dalam scope {activeCompany?.code}</small></article>
           <article><span>Employment owner</span><strong>{activeCompany?.capabilities.can_manage_employment ? 'HR access' : 'Read only'}</strong><small>Effective-dated changes</small></article>
           <article><span>Global control</span><strong>{canManageStatus ? 'Enabled' : 'Restricted'}</strong><small>Suspend / disable identity</small></article>
@@ -236,7 +244,9 @@ function App() {
           </div>
           {busy && <div className="loading-bar" />}
           {lastPage > 1 && <footer className="pagination"><span>Halaman {page} dari {lastPage}</span><div><button className="secondary" disabled={busy || page === 1} onClick={() => setPage((current) => current - 1)}>Sebelumnya</button><button className="secondary" disabled={busy || page === lastPage} onClick={() => setPage((current) => current + 1)}>Berikutnya</button></div></footer>}
-        </section>
+        </section></>}
+
+        {workspace === 'access' && activeCompany && organization && currentUser && <AccessReview token={token} currentUser={currentUser} company={activeCompany} organization={organization} onError={handleError} onMessage={setMessage} />}
       </main>
 
       {selectedUser && organization && activeCompany && (

@@ -11,7 +11,14 @@ class Role extends Model
 {
     use HasFactory, HasUlids;
 
-    protected $fillable = ['code', 'name', 'description', 'is_system', 'is_privileged'];
+    protected $fillable = [
+        'code',
+        'name',
+        'description',
+        'is_system',
+        'is_privileged',
+        'assignment_scope',
+    ];
 
     protected function casts(): array
     {
