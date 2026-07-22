@@ -60,4 +60,9 @@ class UserRoleAssignment extends Model
     {
         return $this->belongsTo(Company::class);
     }
+
+    public function accessRequest(): BelongsTo
+    {
+        return $this->belongsTo(AccessRequest::class);
+    }
 }

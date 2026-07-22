@@ -10,6 +10,9 @@ Status date: 2026-07-22
 - Company-scoped employee invitation and single-use activation token stored only as a SHA-256 hash.
 - Company membership termination with role revocation, device-token revocation, and automatic identity disable when no active employment remains.
 - Append-only identity audit records for login, logout, invitation, activation, and termination events.
+- Privileged-access request, approval, rejection, and immediate-revocation workflow with strict maker/target/approver separation.
+- Ninety-day maximum privileged expiry, duplicate protection, scoped notification, and recent-MFA enforcement point.
+- Explicit user-location memberships and department/location membership checks in effective permission resolution.
 - ULID identity schema for companies, departments, locations, memberships, roles, permissions, access requests, and role assignments.
 - Seed data for two legal entities, eight departments per company, initial system roles, and initial permission catalog.
 - Company-aware permission resolver with active employment and assignment checks.
@@ -21,11 +24,12 @@ Status date: 2026-07-22
 
 ## Verified locally
 
-- API test suite: 15 tests, 61 assertions.
+- API test suite: 25 tests, 109 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
 - Generic credential failures, invitation replay denial, scoped invitation authorization, and termination revocation behavior.
+- Privileged self-approval denial, MFA gate, maximum expiry, duplicate request, rejection, wrong-company denial, and immediate token revocation.
 - ERP and Operations production builds.
 - Web lint.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
@@ -39,12 +43,12 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 
 ## Intentionally not implemented yet
 
-- Password reset, MFA, and identity administration UI.
-- Privileged access request commands and approval policies.
+- Password reset, MFA enrollment/challenge endpoint, and identity administration UI.
+- Step-up timestamp storage and enforcement exist, but no production path can mark MFA verified until the MFA endpoint is implemented.
 - Session absolute-lifetime middleware and refresh-token family implementation.
 - Organization/access administration screens.
 - OpenAPI generated clients.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 
-These belong to the next identity vertical slice; the scaffold must not be described as production-ready authentication.
+These belong to the next identity vertical slice; authentication and privileged approval must not be described as production-ready until MFA and session controls are complete.

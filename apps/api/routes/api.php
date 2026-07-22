@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
 use App\Http\Controllers\Api\V1\InvitationController;
+use App\Http\Controllers\Api\V1\PrivilegedAccessController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,5 +24,18 @@ Route::prefix('v1')->group(function (): void {
             '/identity/users/{user}/companies/{company}/terminate',
             [CompanyMembershipController::class, 'terminate'],
         )->middleware('permission.scoped:identity.user.manage');
+
+        Route::prefix('/identity/companies/{company}')->group(function (): void {
+            Route::get('/access-requests', [PrivilegedAccessController::class, 'index'])
+                ->middleware('permission.scoped:identity.access.approve');
+            Route::post('/access-requests', [PrivilegedAccessController::class, 'store'])
+                ->middleware(['permission.scoped:identity.access.request', 'mfa.recent']);
+            Route::post('/access-requests/{accessRequest}/approve', [PrivilegedAccessController::class, 'approve'])
+                ->middleware(['permission.scoped:identity.access.approve', 'mfa.recent']);
+            Route::post('/access-requests/{accessRequest}/reject', [PrivilegedAccessController::class, 'reject'])
+                ->middleware(['permission.scoped:identity.access.approve', 'mfa.recent']);
+            Route::post('/role-assignments/{assignment}/revoke', [PrivilegedAccessController::class, 'revoke'])
+                ->middleware(['permission.scoped:identity.access.revoke', 'mfa.recent']);
+        });
     });
 });

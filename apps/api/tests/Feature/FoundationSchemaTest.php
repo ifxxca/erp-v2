@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Department;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\FoundationSeeder;
@@ -23,11 +24,15 @@ class FoundationSchemaTest extends TestCase
             'locations',
             'user_company_memberships',
             'user_department_memberships',
+            'user_location_memberships',
             'roles',
             'permissions',
             'role_permissions',
             'access_requests',
             'user_role_assignments',
+            'user_invitations',
+            'audit_logs',
+            'personal_access_tokens',
         ];
 
         foreach ($expectedTables as $table) {
@@ -43,6 +48,7 @@ class FoundationSchemaTest extends TestCase
         $this->assertSame(2, Company::query()->count());
         $this->assertSame(16, Department::query()->count());
         $this->assertSame(7, Role::query()->count());
+        $this->assertSame(13, Permission::query()->count());
     }
 
     public function test_users_use_ulids_and_are_active_only_when_explicitly_created_active(): void

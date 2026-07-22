@@ -24,6 +24,12 @@ API base URL: `http://localhost:8000/api/v1`.
 - `GET /me` returns the active authenticated identity.
 - `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
 - `POST /identity/users/{user}/companies/{company}/terminate` terminates scoped employment and revokes stale access.
+- `GET /identity/companies/{company}/access-requests` returns the scoped approval queue.
+- `POST /identity/companies/{company}/access-requests` creates a privileged request.
+- `POST /identity/companies/{company}/access-requests/{request}/approve|reject` applies maker-checker policy.
+- `POST /identity/companies/{company}/role-assignments/{assignment}/revoke` immediately revokes access and target tokens.
+
+Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. The enforcement point is implemented, but the MFA enrollment/challenge endpoint is intentionally pending.
 
 The canonical payload and response definitions are in `packages/api-contract/openapi.yaml`.
 

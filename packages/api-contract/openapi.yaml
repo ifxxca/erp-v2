@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.2.0
+  version: 0.3.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -89,7 +89,7 @@ paths:
   /identity/users/invitations:
     post:
       operationId: createUserInvitation
-      summary: Invite an employee into one company and explicit departments.
+      summary: Invite an employee into one company with explicit department and location memberships.
       description: Requires identity.user.manage in the submitted company_id scope.
       security:
         - bearerAuth: []
@@ -152,6 +152,157 @@ paths:
           description: User, company, or active membership not found.
         "422":
           $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/access-requests:
+    get:
+      operationId: listPrivilegedAccessRequests
+      summary: List the company access-review queue.
+      description: Requires identity.access.approve in companyId.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/AccessRequestStatus"
+      responses:
+        "200":
+          description: Paginated access requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequestPage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createPrivilegedAccessRequest
+      summary: Request a time-bounded privileged role assignment.
+      description: Requires identity.access.request and MFA verified within 15 minutes.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePrivilegedAccessRequest"
+      responses:
+        "201":
+          description: Pending request created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivilegedAccessRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/access-requests/{accessRequestId}/approve:
+    post:
+      operationId: approvePrivilegedAccessRequest
+      summary: Approve a pending request and atomically create its assignment.
+      description: Requester, target, and approver must be different; recent MFA is required.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/AccessRequestId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessDecision"
+      responses:
+        "200":
+          description: Assignment created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessApprovalResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Company or access request not found in the requested scope.
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/access-requests/{accessRequestId}/reject:
+    post:
+      operationId: rejectPrivilegedAccessRequest
+      summary: Reject a pending privileged access request.
+      description: Requires identity.access.approve and recent MFA.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/AccessRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessRejection"
+      responses:
+        "200":
+          description: Request rejected without creating an assignment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivilegedAccessRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Company or access request not found in the requested scope.
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/companies/{companyId}/role-assignments/{assignmentId}/revoke:
+    post:
+      operationId: revokePrivilegedRoleAssignment
+      summary: Immediately revoke an assignment and all target-user device tokens.
+      description: Requires identity.access.revoke and recent MFA.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/AssignmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessRevocation"
+      responses:
+        "200":
+          description: Assignment revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRevocationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Company or assignment not found in the requested scope.
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
 components:
   securitySchemes:
     cookieAuth:
@@ -176,6 +327,20 @@ components:
       schema:
         type: string
         pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    AccessRequestId:
+      name: accessRequestId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
   responses:
     Unauthenticated:
       description: Authentication failed or is missing.
@@ -191,6 +356,12 @@ components:
             $ref: "#/components/schemas/Error"
     ValidationFailed:
       description: Request validation or lifecycle rule failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The requested lifecycle transition conflicts with current state.
       content:
         application/json:
           schema:
@@ -270,6 +441,12 @@ components:
         primary_department_id:
           type: string
           description: Must be included in department_ids.
+        location_ids:
+          type: array
+          maxItems: 50
+          uniqueItems: true
+          items:
+            type: string
         valid_from:
           type: string
           format: date
@@ -300,6 +477,150 @@ components:
         status:
           type: string
           enum: [invited, active, suspended, disabled]
+    AccessRequestStatus:
+      type: string
+      enum: [pending, approved, rejected, cancelled]
+    CreatePrivilegedAccessRequest:
+      type: object
+      required: [target_user_id, role_id, reason, valid_until]
+      properties:
+        target_user_id:
+          type: string
+        role_id:
+          type: string
+          description: Must identify a role currently classified as privileged.
+        department_id:
+          type: [string, "null"]
+        location_id:
+          type: [string, "null"]
+        reason:
+          type: string
+          maxLength: 2000
+        valid_until:
+          type: string
+          format: date-time
+          description: Must be in the future and no more than 90 days from request time.
+    AccessDecision:
+      type: object
+      properties:
+        note:
+          type: [string, "null"]
+          maxLength: 2000
+    AccessRejection:
+      type: object
+      required: [note]
+      properties:
+        note:
+          type: string
+          maxLength: 2000
+    AccessRevocation:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 2000
+    PrivilegedAccessRequest:
+      type: object
+      required:
+        - id
+        - status
+        - target_user
+        - role
+        - company_id
+        - reason
+        - valid_until
+        - requested_by
+      properties:
+        id:
+          type: string
+        status:
+          $ref: "#/components/schemas/AccessRequestStatus"
+        target_user:
+          $ref: "#/components/schemas/UserSummary"
+        role:
+          $ref: "#/components/schemas/RoleSummary"
+        company_id:
+          type: string
+        department_id:
+          type: [string, "null"]
+        location_id:
+          type: [string, "null"]
+        reason:
+          type: string
+        valid_until:
+          type: string
+          format: date-time
+        requested_by:
+          $ref: "#/components/schemas/UserSummary"
+        decided_by:
+          oneOf:
+            - $ref: "#/components/schemas/UserSummary"
+            - type: "null"
+        decided_at:
+          type: [string, "null"]
+          format: date-time
+        decision_note:
+          type: [string, "null"]
+    UserSummary:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+    RoleSummary:
+      type: object
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+    AccessApprovalResponse:
+      type: object
+      required: [access_request_id, assignment_id, status, valid_until]
+      properties:
+        access_request_id:
+          type: string
+        assignment_id:
+          type: string
+        status:
+          const: approved
+        valid_until:
+          type: string
+          format: date-time
+    AccessRevocationResponse:
+      type: object
+      required: [assignment_id, status, revoked_at]
+      properties:
+        assignment_id:
+          type: string
+        status:
+          const: revoked
+        revoked_at:
+          type: string
+          format: date-time
+    AccessRequestPage:
+      type: object
+      required: [data, current_page, per_page, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrivilegedAccessRequest"
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
     Error:
       type: object
       required: [message]

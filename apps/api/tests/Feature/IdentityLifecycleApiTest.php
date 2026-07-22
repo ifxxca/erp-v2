@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Department;
+use App\Models\Location;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -109,6 +110,11 @@ class IdentityLifecycleApiTest extends TestCase
             'code' => 'IT',
             'name' => 'IT',
         ]);
+        $location = Location::query()->create([
+            'company_id' => $company->id,
+            'code' => 'HQ',
+            'name' => 'Head Office',
+        ]);
         $actor = User::factory()->create();
         $this->grantUserManagement($actor, $company);
         Sanctum::actingAs($actor);
@@ -120,6 +126,7 @@ class IdentityLifecycleApiTest extends TestCase
             'employee_no' => 'EMP-100',
             'department_ids' => [$department->id],
             'primary_department_id' => $department->id,
+            'location_ids' => [$location->id],
             'valid_from' => today()->toDateString(),
         ]);
 
@@ -152,6 +159,11 @@ class IdentityLifecycleApiTest extends TestCase
         $this->assertDatabaseHas('user_company_memberships', [
             'user_id' => $invitee->id,
             'employment_status' => 'active',
+        ]);
+        $this->assertDatabaseHas('user_location_memberships', [
+            'user_id' => $invitee->id,
+            'company_id' => $company->id,
+            'location_id' => $location->id,
         ]);
         $this->postJson('/api/v1/auth/invitations/accept', [
             'token' => $plainToken,

@@ -48,6 +48,8 @@ erDiagram
     COMPANIES ||--o{ LOCATIONS : owns
     USERS ||--o{ USER_DEPARTMENT_MEMBERSHIPS : belongs_to
     DEPARTMENTS ||--o{ USER_DEPARTMENT_MEMBERSHIPS : has
+    USERS ||--o{ USER_LOCATION_MEMBERSHIPS : belongs_to
+    LOCATIONS ||--o{ USER_LOCATION_MEMBERSHIPS : has
     DEPARTMENTS ||--o{ DEPARTMENTS : parent_of
     USERS ||--o{ USER_ROLE_ASSIGNMENTS : receives
     ROLES ||--o{ USER_ROLE_ASSIGNMENTS : assigned_as
@@ -56,6 +58,9 @@ erDiagram
     LOCATIONS o|--o{ USER_ROLE_ASSIGNMENTS : scopes_location
     ROLES ||--o{ ROLE_PERMISSIONS : grants
     PERMISSIONS ||--o{ ROLE_PERMISSIONS : included_in
+    USERS ||--o{ ACCESS_REQUESTS : targets
+    ROLES ||--o{ ACCESS_REQUESTS : requests
+    ACCESS_REQUESTS o|--o| USER_ROLE_ASSIGNMENTS : authorizes
     USERS ||--o{ AUDIT_LOGS : acts
 
     USERS {
@@ -107,12 +112,21 @@ erDiagram
         date valid_from
         date valid_until
     }
+    USER_LOCATION_MEMBERSHIPS {
+        uuid id PK
+        uuid user_id FK
+        uuid company_id FK
+        uuid location_id FK
+        date valid_from
+        date valid_until
+    }
     ROLES {
         uuid id PK
         string code UK
         string name
         string description
         boolean is_system
+        boolean is_privileged
     }
     PERMISSIONS {
         uuid id PK
@@ -134,16 +148,28 @@ erDiagram
         datetime valid_from
         datetime valid_until
         uuid assigned_by FK
+        uuid access_request_id FK
+        datetime revoked_at
+        uuid revoked_by FK
+    }
+    ACCESS_REQUESTS {
+        uuid id PK
+        uuid target_user_id FK
+        uuid role_id FK
+        uuid company_id FK
+        uuid requested_by FK
+        uuid decided_by FK
+        enum status
+        datetime requested_valid_until
+        datetime decided_at
     }
     AUDIT_LOGS {
         uuid id PK
-        uuid company_id FK
         uuid actor_user_id FK
-        string action
+        string event
         string subject_type
         uuid subject_id
-        json before_data
-        json after_data
+        json metadata
         string request_id
         datetime occurred_at
     }
@@ -156,7 +182,9 @@ Aturan penting:
 - Department awal per company: Retail, Delivery, Outbound, HR, GA, Finance, Operation Excellence, dan IT. Company dapat menonaktifkan department yang tidak berlaku tanpa mengubah katalog platform.
 - Kode department dan location unik di dalam company, bukan global.
 - Satu user boleh menjadi anggota beberapa departemen, tetapi hanya satu membership aktif yang primary.
+- Location membership selalu eksplisit dan tidak diwariskan dari department.
 - Role assignment selalu memiliki company scope; di dalamnya dapat dibatasi lagi berdasarkan departemen dan/atau lokasi.
+- Assignment privileged hanya dibuat dari access request approved, memiliki expiry maksimum 90 hari, dan requester/target/approver harus berbeda.
 - Permission menggunakan pola `module.resource.action`, misalnya `procurement.purchase-request.approve`.
 - Hak efektif dihitung dari assignment yang aktif dan scope request. Tidak ada pengecekan role menggunakan ID hardcoded.
 - Menonaktifkan user segera membatalkan session dan akses API, tanpa menghapus histori transaksinya.

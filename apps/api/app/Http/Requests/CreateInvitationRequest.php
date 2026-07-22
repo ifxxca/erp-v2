@@ -44,6 +44,15 @@ class CreateInvitationRequest extends FormRequest
                     ->where('status', 'active')),
             ],
             'primary_department_id' => ['required', 'ulid', Rule::in($this->input('department_ids', []))],
+            'location_ids' => ['sometimes', 'array', 'max:50'],
+            'location_ids.*' => [
+                'required',
+                'ulid',
+                'distinct',
+                Rule::exists('locations', 'id')->where(fn ($query) => $query
+                    ->where('company_id', $companyId)
+                    ->where('status', 'active')),
+            ],
             'valid_from' => ['required', 'date'],
         ];
     }

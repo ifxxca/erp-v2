@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->hasMany(UserDepartmentMembership::class);
     }
 
+    public function locationMemberships(): HasMany
+    {
+        return $this->hasMany(UserLocationMembership::class);
+    }
+
     public function roleAssignments(): HasMany
     {
         return $this->hasMany(UserRoleAssignment::class);

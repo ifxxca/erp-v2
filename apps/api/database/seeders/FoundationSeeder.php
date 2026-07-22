@@ -46,6 +46,9 @@ class FoundationSeeder extends Seeder
             ['identity.user.view', 'identity', 'user', 'view'],
             ['identity.user.manage', 'identity', 'user', 'manage'],
             ['identity.access.assign', 'identity', 'access', 'assign'],
+            ['identity.access.request', 'identity', 'access', 'request'],
+            ['identity.access.approve', 'identity', 'access', 'approve'],
+            ['identity.access.revoke', 'identity', 'access', 'revoke'],
             ['audit.log.view', 'audit', 'log', 'view'],
             ['audit.export.create', 'audit', 'export', 'create'],
             ['fleet.vehicle.view', 'fleet', 'vehicle', 'view'],
@@ -86,7 +89,18 @@ class FoundationSeeder extends Seeder
 
         Role::query()->where('code', 'security-admin')->firstOrFail()
             ->permissions()->syncWithoutDetaching($permissions
-            ->only(['identity.user.view', 'identity.user.manage', 'identity.access.assign', 'audit.log.view'])
+            ->only([
+                'identity.user.view',
+                'identity.user.manage',
+                'identity.access.request',
+                'identity.access.revoke',
+                'audit.log.view',
+            ])
+            ->pluck('id'));
+
+        Role::query()->where('code', 'management-access-owner')->firstOrFail()
+            ->permissions()->syncWithoutDetaching($permissions
+            ->only(['identity.user.view', 'identity.access.approve', 'identity.access.revoke', 'audit.log.view'])
             ->pluck('id'));
 
         Role::query()->where('code', 'fleet-manager')->firstOrFail()

@@ -51,6 +51,12 @@ class CompanyMembershipController extends Controller
                     ->whereNull('valid_until')
                     ->orWhere('valid_until', '>', today()))
                 ->update(['valid_until' => today()]);
+            $user->locationMemberships()
+                ->where('company_id', $company->id)
+                ->where(fn (Builder $query) => $query
+                    ->whereNull('valid_until')
+                    ->orWhere('valid_until', '>', today()))
+                ->update(['valid_until' => today()]);
             $user->roleAssignments()
                 ->active()
                 ->where('company_id', $company->id)

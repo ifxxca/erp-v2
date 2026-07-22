@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
+use App\Models\Location;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserCompanyMembership;
+use App\Models\UserLocationMembership;
 use App\Models\UserRoleAssignment;
 use App\Modules\Identity\Application\EffectivePermissionResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,5 +65,51 @@ class EffectivePermissionResolverTest extends TestCase
         $this->assertFalse(
             app(EffectivePermissionResolver::class)->allows($user, 'fleet.vehicle.view', $company->id),
         );
+    }
+
+    public function test_location_scoped_permission_requires_active_location_membership(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::query()->create(['code' => 'A', 'legal_name' => 'Company A']);
+        $location = Location::query()->create([
+            'company_id' => $company->id,
+            'code' => 'WH-A',
+            'name' => 'Warehouse A',
+        ]);
+        UserCompanyMembership::query()->create([
+            'user_id' => $user->id,
+            'company_id' => $company->id,
+            'employment_status' => 'active',
+            'is_primary' => true,
+            'valid_from' => today(),
+        ]);
+        $permission = Permission::query()->create([
+            'code' => 'fleet.vehicle.view',
+            'module' => 'fleet',
+            'resource' => 'vehicle',
+            'action' => 'view',
+        ]);
+        $role = Role::query()->create(['code' => 'fleet-manager', 'name' => 'Fleet Manager']);
+        $role->permissions()->attach($permission);
+        UserRoleAssignment::query()->create([
+            'user_id' => $user->id,
+            'role_id' => $role->id,
+            'company_id' => $company->id,
+            'location_id' => $location->id,
+            'valid_from' => now(),
+            'assigned_by' => $user->id,
+        ]);
+
+        $resolver = app(EffectivePermissionResolver::class);
+        $this->assertFalse($resolver->allows($user, 'fleet.vehicle.view', $company->id, locationId: $location->id));
+
+        UserLocationMembership::query()->create([
+            'user_id' => $user->id,
+            'company_id' => $company->id,
+            'location_id' => $location->id,
+            'valid_from' => today(),
+        ]);
+
+        $this->assertTrue($resolver->allows($user, 'fleet.vehicle.view', $company->id, locationId: $location->id));
     }
 }

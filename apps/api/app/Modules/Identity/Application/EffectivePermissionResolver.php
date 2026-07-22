@@ -31,6 +31,28 @@ class EffectivePermissionResolver
             return false;
         }
 
+        if ($departmentId && ! $user->departmentMemberships()
+            ->where('company_id', $companyId)
+            ->where('department_id', $departmentId)
+            ->where('valid_from', '<=', today())
+            ->where(fn (Builder $query) => $query
+                ->whereNull('valid_until')
+                ->orWhere('valid_until', '>=', today()))
+            ->exists()) {
+            return false;
+        }
+
+        if ($locationId && ! $user->locationMemberships()
+            ->where('company_id', $companyId)
+            ->where('location_id', $locationId)
+            ->where('valid_from', '<=', today())
+            ->where(fn (Builder $query) => $query
+                ->whereNull('valid_until')
+                ->orWhere('valid_until', '>=', today()))
+            ->exists()) {
+            return false;
+        }
+
         return $user->roleAssignments()
             ->active()
             ->where(fn (Builder $query) => $query

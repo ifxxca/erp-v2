@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserCompanyMembership;
 use App\Models\UserDepartmentMembership;
 use App\Models\UserInvitation;
+use App\Models\UserLocationMembership;
 use App\Modules\Identity\Application\AuditLogger;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +59,15 @@ class InvitationController extends Controller
                     'company_id' => $data['company_id'],
                     'department_id' => $departmentId,
                     'is_primary' => $departmentId === $data['primary_department_id'],
+                    'valid_from' => $data['valid_from'],
+                ]);
+            }
+
+            foreach ($data['location_ids'] ?? [] as $locationId) {
+                UserLocationMembership::query()->create([
+                    'user_id' => $user->id,
+                    'company_id' => $data['company_id'],
+                    'location_id' => $locationId,
                     'valid_from' => $data['valid_from'],
                 ]);
             }
