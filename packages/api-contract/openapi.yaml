@@ -1,16 +1,77 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.1.0
+  version: 0.2.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
     description: Local development
 paths:
+  /auth/login:
+    post:
+      operationId: login
+      summary: Exchange active employee credentials for a surface-bound access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: A short-lived bearer token returned only once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Login rate limit exceeded.
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke the bearer token used for this request.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Token revoked.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /auth/invitations/accept:
+    post:
+      operationId: acceptInvitation
+      summary: Activate an invited identity using a single-use token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptInvitationRequest"
+      responses:
+        "200":
+          description: Identity activated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    const: active
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Acceptance rate limit exceeded.
   /me:
     get:
       operationId: getCurrentUser
-      summary: Return the authenticated identity and active access context.
+      summary: Return the authenticated identity.
       security:
         - cookieAuth: []
         - bearerAuth: []
@@ -22,7 +83,75 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
         "401":
-          description: Unauthenticated.
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /identity/users/invitations:
+    post:
+      operationId: createUserInvitation
+      summary: Invite an employee into one company and explicit departments.
+      description: Requires identity.user.manage in the submitted company_id scope.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitationRequest"
+      responses:
+        "201":
+          description: Invitation created and sent; the plaintext token is never returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/users/{userId}/companies/{companyId}/terminate:
+    post:
+      operationId: terminateCompanyMembership
+      summary: Terminate one company membership and revoke stale access.
+      description: Requires identity.user.manage in companyId. Self-termination is denied.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/CompanyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+      responses:
+        "200":
+          description: Membership terminated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    const: terminated
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: User, company, or active membership not found.
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
 components:
   securitySchemes:
     cookieAuth:
@@ -32,7 +161,131 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    CompanyId:
+      name: companyId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+  responses:
+    Unauthenticated:
+      description: Authentication failed or is missing.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated identity is inactive or lacks scoped permission.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationFailed:
+      description: Request validation or lifecycle rule failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
+    LoginRequest:
+      type: object
+      required: [email, password, surface, device_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        surface:
+          type: string
+          enum: [erp_web, ops_web, mobile]
+        device_name:
+          type: string
+          maxLength: 120
+    TokenResponse:
+      type: object
+      required: [token_type, access_token, expires_at]
+      properties:
+        token_type:
+          const: Bearer
+        access_token:
+          type: string
+          description: Plaintext access token returned only at issuance.
+        expires_at:
+          type: string
+          format: date-time
+    AcceptInvitationRequest:
+      type: object
+      required: [token, password, password_confirmation]
+      properties:
+        token:
+          type: string
+          minLength: 64
+          maxLength: 64
+        password:
+          type: string
+          format: password
+          minLength: 12
+        password_confirmation:
+          type: string
+          format: password
+    CreateInvitationRequest:
+      type: object
+      required:
+        - name
+        - email
+        - company_id
+        - department_ids
+        - primary_department_id
+        - valid_from
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+        company_id:
+          type: string
+        employee_no:
+          type: [string, "null"]
+          maxLength: 64
+        department_ids:
+          type: array
+          minItems: 1
+          maxItems: 8
+          uniqueItems: true
+          items:
+            type: string
+        primary_department_id:
+          type: string
+          description: Must be included in department_ids.
+        valid_from:
+          type: string
+          format: date
+    InvitationResponse:
+      type: object
+      required: [id, user_id, status, expires_at]
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        status:
+          const: invited
+        expires_at:
+          type: string
+          format: date-time
     CurrentUser:
       type: object
       required: [id, name, email, status]
@@ -47,3 +300,17 @@ components:
         status:
           type: string
           enum: [invited, active, suspended, disabled]
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string

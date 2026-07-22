@@ -35,6 +35,11 @@ class User extends Authenticatable
         return $this->hasMany(UserRoleAssignment::class);
     }
 
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(UserInvitation::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

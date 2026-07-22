@@ -16,6 +16,17 @@ docker compose --env-file infrastructure/.env.example -f infrastructure/compose.
 
 API base URL: `http://localhost:8000/api/v1`.
 
+## Identity endpoints
+
+- `POST /auth/login` issues an expiring bearer token for `erp_web`, `ops_web`, or `mobile`.
+- `POST /auth/logout` revokes the presented bearer token.
+- `POST /auth/invitations/accept` activates a single-use invitation.
+- `GET /me` returns the active authenticated identity.
+- `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
+- `POST /identity/users/{user}/companies/{company}/terminate` terminates scoped employment and revokes stale access.
+
+The canonical payload and response definitions are in `packages/api-contract/openapi.yaml`.
+
 ## Verification
 
 ```powershell
