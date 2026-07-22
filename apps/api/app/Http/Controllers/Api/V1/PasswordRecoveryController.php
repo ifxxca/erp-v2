@@ -7,6 +7,7 @@ use App\Http\Requests\RequestPasswordResetRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
 use App\Modules\Identity\Application\AuditLogger;
+use App\Modules\Identity\Application\MobileTokenService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PasswordRecoveryController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly MobileTokenService $mobileTokens,
+    ) {}
 
     public function request(RequestPasswordResetRequest $request): JsonResponse
     {
@@ -43,6 +47,7 @@ class PasswordRecoveryController extends Controller
             $credentials,
             function (User $user, string $password) use ($request): void {
                 $user->forceFill(['password' => $password])->save();
+                $this->mobileTokens->revokeAllForUser($user, 'password_reset');
                 $user->tokens()->delete();
                 $this->audit->record('identity.password_reset_completed', $user, $user, request: $request);
                 event(new PasswordReset($user));

@@ -18,8 +18,9 @@ API base URL: `http://localhost:8000/api/v1`.
 
 ## Identity endpoints
 
-- `POST /auth/login` issues an expiring bearer token for `erp_web`, `ops_web`, or `mobile`.
-- `POST /auth/logout` revokes the presented bearer token.
+- `POST /auth/login` issues an expiring bearer token; mobile login also starts one 30-day device-bound refresh family.
+- `POST /auth/mobile/refresh` rotates the refresh secret and mobile access token; reuse revokes the entire family.
+- `POST /auth/logout` revokes the presented bearer token and its mobile refresh family when applicable.
 - `POST /auth/password/forgot|reset` performs non-enumerating, single-use password recovery.
 - `POST /auth/invitations/accept` activates a single-use invitation.
 - `GET /auth/mfa` returns MFA and current-token assurance status.
@@ -28,7 +29,7 @@ API base URL: `http://localhost:8000/api/v1`.
 - `POST /auth/mfa/recovery-codes/regenerate` replaces recovery codes after recent MFA.
 - `DELETE /auth/mfa/totp` disables optional MFA and revokes every token.
 - `GET /auth/sessions` lists device sessions owned by the authenticated identity.
-- `DELETE /auth/sessions/{token}` and `POST /auth/sessions/revoke-all` revoke device access.
+- `DELETE /auth/sessions/{tokenId}` and `POST /auth/sessions/revoke-all` revoke device access and associated refresh families.
 - `GET /me` returns the active authenticated identity.
 - `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
 - `POST /identity/users/{user}/companies/{company}/terminate` terminates scoped employment and revokes stale access.
@@ -40,6 +41,8 @@ API base URL: `http://localhost:8000/api/v1`.
 Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. Privileged assignments cannot be approved until the target user has active MFA.
 
 Token idle timeout is enforced before Sanctum updates `last_used_at`: ERP Web 30 minutes, Operations Web 2 hours, and Mobile 15 minutes. Absolute lifetime remains 12 hours, 24 hours, and 15 minutes respectively.
+
+Mobile refresh tokens are stored server-side only as SHA-256 hashes, rotate on every use, and retain their consumed history for replay detection. Rotation does not extend the 30-day family expiry. Mobile clients must transmit them only over TLS and keep them in platform-protected secure storage, never ordinary preferences or logs.
 
 The canonical payload and response definitions are in `packages/api-contract/openapi.yaml`.
 

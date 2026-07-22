@@ -19,6 +19,7 @@ class MfaService
         private readonly Google2FA $totp,
         private readonly AuditLogger $audit,
         private readonly MfaRequirementResolver $requirement,
+        private readonly MobileTokenService $mobileTokens,
     ) {}
 
     /** @return array{secret: string, otpauth_url: string} */
@@ -231,6 +232,7 @@ class MfaService
                 'disabled_at' => now(),
             ]);
             $user->mfaRecoveryCodes()->delete();
+            $this->mobileTokens->revokeAllForUser($user, 'mfa_disabled');
             $user->tokens()->delete();
             $this->audit->record('identity.mfa_disabled', $user, $method, request: $request);
         });
@@ -263,7 +265,9 @@ class MfaService
     private function markCurrentTokenVerified(User $user): void
     {
         $token = $this->assertSupportedToken($user);
-        $token->forceFill(['mfa_verified_at' => now()])->save();
+        $verifiedAt = now();
+        $token->forceFill(['mfa_verified_at' => $verifiedAt])->save();
+        $token->refreshTokenFamily?->update(['mfa_verified_at' => $verifiedAt]);
     }
 
     private function assertSupportedToken(User $user): PersonalAccessToken

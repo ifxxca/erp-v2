@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MfaController;
+use App\Http\Controllers\Api\V1\MobileTokenController;
 use App\Http\Controllers\Api\V1\PasswordRecoveryController;
 use App\Http\Controllers\Api\V1\PrivilegedAccessController;
 use App\Http\Controllers\Api\V1\SessionController;
@@ -16,6 +17,8 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('throttle:3,1');
     Route::post('/auth/password/reset', [PasswordRecoveryController::class, 'reset'])
         ->middleware('throttle:5,1');
+    Route::post('/auth/mobile/refresh', [MobileTokenController::class, 'refresh'])
+        ->middleware('throttle:10,1');
     Route::post('/auth/invitations/accept', [InvitationController::class, 'accept'])
         ->middleware('throttle:10,1');
 

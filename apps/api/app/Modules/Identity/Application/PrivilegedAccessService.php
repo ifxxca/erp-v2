@@ -15,7 +15,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PrivilegedAccessService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly MobileTokenService $mobileTokens,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function request(Company $company, User $actor, array $data, Request $httpRequest): AccessRequest
@@ -290,6 +293,7 @@ class PrivilegedAccessService
                 'revoked_by' => $actor->id,
                 'revocation_reason' => $reason,
             ]);
+            $this->mobileTokens->revokeAllForUser($assignment->user, 'privileged_access_revoked');
             $assignment->user->tokens()->delete();
             $this->audit->record(
                 'identity.privileged_access_revoked',

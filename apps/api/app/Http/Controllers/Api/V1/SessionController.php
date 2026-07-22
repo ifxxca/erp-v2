@@ -7,13 +7,17 @@ use App\Http\Requests\RevokeAllSessionsRequest;
 use App\Models\PersonalAccessToken;
 use App\Modules\Identity\Application\AuditLogger;
 use App\Modules\Identity\Application\MfaException;
+use App\Modules\Identity\Application\MobileTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class SessionController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly MobileTokenService $mobileTokens,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -39,6 +43,7 @@ class SessionController extends Controller
     {
         $token = $request->user()->tokens()->whereKey($tokenId)->firstOrFail();
         $current = $token->id === $request->user()->currentAccessToken()?->id;
+        $family = $token->refreshTokenFamily;
         $this->audit->record(
             'identity.session_revoked',
             $request->user(),
@@ -46,7 +51,11 @@ class SessionController extends Controller
             ['surface' => $token->surface(), 'current' => $current],
             $request,
         );
-        $token->delete();
+        if ($family) {
+            $this->mobileTokens->revokeFamily($family, 'session_revoked');
+        } else {
+            $token->delete();
+        }
 
         return response()->json(['status' => 'revoked', 'current' => $current]);
     }
@@ -59,17 +68,29 @@ class SessionController extends Controller
         }
 
         $keepCurrent = (bool) ($request->validated('keep_current') ?? false);
+        $currentFamilyId = $keepCurrent
+            ? $user->currentAccessToken()?->refresh_token_family_id
+            : null;
         $query = $user->tokens();
         if ($keepCurrent && $currentId = $user->currentAccessToken()?->id) {
             $query->whereKeyNot($currentId);
         }
         $revokedCount = $query->count();
+        $revokedFamilyCount = $this->mobileTokens->revokeAllForUser(
+            $user,
+            'sessions_revoked',
+            $currentFamilyId,
+        );
         $query->delete();
         $this->audit->record(
             'identity.sessions_revoked',
             $user,
             $user,
-            ['revoked_count' => $revokedCount, 'kept_current' => $keepCurrent],
+            [
+                'revoked_count' => $revokedCount,
+                'revoked_refresh_family_count' => $revokedFamilyCount,
+                'kept_current' => $keepCurrent,
+            ],
             $request,
         );
 

@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserCompanyMembership;
 use App\Models\UserRoleAssignment;
+use App\Modules\Identity\Application\MobileTokenService;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -205,6 +206,7 @@ class IdentityLifecycleApiTest extends TestCase
         $target = User::factory()->create();
         $this->createActiveMembership($target, $company);
         $target->createToken('Target Browser');
+        $mobile = $this->app->make(MobileTokenService::class)->issue($target, 'Target Phone');
         Sanctum::actingAs($actor);
 
         $this->postJson("/api/v1/identity/users/{$target->id}/companies/{$company->id}/terminate", [
@@ -218,6 +220,10 @@ class IdentityLifecycleApiTest extends TestCase
             'employment_status' => 'terminated',
         ]);
         $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $target->id]);
+        $this->assertDatabaseHas('mobile_refresh_token_families', [
+            'id' => $mobile['family_id'],
+            'revocation_reason' => 'company_membership_terminated',
+        ]);
         $audit = AuditLog::query()->where('event', 'identity.company_membership_terminated')->sole();
         $this->assertSame('Employment ended', $audit->metadata['reason']);
         $this->assertTrue($audit->metadata['identity_disabled']);

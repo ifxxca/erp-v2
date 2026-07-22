@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.5.0
+  version: 0.6.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -19,17 +19,47 @@ paths:
               $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: A short-lived bearer token returned only once.
+          description: A surface-bound token response; mobile also receives a rotating refresh token.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResponse"
+                anyOf:
+                  - $ref: "#/components/schemas/TokenResponse"
+                  - $ref: "#/components/schemas/MobileTokenResponse"
         "401":
           $ref: "#/components/responses/Unauthenticated"
         "422":
           $ref: "#/components/responses/ValidationFailed"
         "429":
           description: Login rate limit exceeded.
+  /auth/mobile/refresh:
+    post:
+      operationId: refreshMobileToken
+      summary: Rotate a mobile refresh token and replace its family-bound access token.
+      description: Reuse of a consumed token revokes the entire device token family.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshMobileTokenRequest"
+      responses:
+        "200":
+          description: New access and refresh tokens; the submitted refresh token is consumed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenResponse"
+        "401":
+          description: Refresh token is unknown, consumed, expired, revoked, or belongs to an ineligible identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Refresh rate limit exceeded.
   /auth/password/forgot:
     post:
       operationId: requestPasswordReset
@@ -695,6 +725,26 @@ components:
         mfa_required:
           type: boolean
           description: When true, call the MFA challenge before accessing protected application routes.
+    MobileTokenResponse:
+      allOf:
+        - $ref: "#/components/schemas/TokenResponse"
+        - type: object
+          required: [refresh_token, refresh_expires_at]
+          properties:
+            refresh_token:
+              type: string
+              description: Rotating plaintext secret returned only at issuance; store in OS-protected secure storage.
+            refresh_expires_at:
+              type: string
+              format: date-time
+              description: Absolute family expiry; rotation never extends it.
+    RefreshMobileTokenRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          maxLength: 512
     PasswordConfirmation:
       type: object
       required: [password]

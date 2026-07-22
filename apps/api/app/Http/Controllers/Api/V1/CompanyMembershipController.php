@@ -7,6 +7,7 @@ use App\Http\Requests\TerminateCompanyMembershipRequest;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Identity\Application\AuditLogger;
+use App\Modules\Identity\Application\MobileTokenService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CompanyMembershipController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly MobileTokenService $mobileTokens,
+    ) {}
 
     public function terminate(
         TerminateCompanyMembershipRequest $request,
@@ -79,6 +83,7 @@ class CompanyMembershipController extends Controller
             }
 
             // Tokens are not company-scoped yet, so all devices are revoked to prevent stale access.
+            $this->mobileTokens->revokeAllForUser($user, 'company_membership_terminated');
             $user->tokens()->delete();
 
             $this->audit->record(

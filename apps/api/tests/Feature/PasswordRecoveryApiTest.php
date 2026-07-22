@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\UserCompanyMembership;
+use App\Modules\Identity\Application\MobileTokenService;
 use App\Notifications\PasswordResetNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ class PasswordRecoveryApiTest extends TestCase
         $user = $this->activeEmployee('employee@example.test');
         $user->createToken('ERP Browser');
         $user->createToken('Operations Tablet');
+        $mobile = $this->app->make(MobileTokenService::class)->issue($user, 'Employee Phone');
         $plainToken = null;
 
         $this->postJson('/api/v1/auth/password/forgot', ['email' => $user->email])->assertAccepted();
@@ -73,6 +75,10 @@ class PasswordRecoveryApiTest extends TestCase
 
         $this->assertTrue(Hash::check($password, $user->fresh()->password));
         $this->assertDatabaseCount('personal_access_tokens', 0);
+        $this->assertDatabaseHas('mobile_refresh_token_families', [
+            'id' => $mobile['family_id'],
+            'revocation_reason' => 'password_reset',
+        ]);
         $this->assertDatabaseCount('password_reset_tokens', 0);
         $this->assertDatabaseHas('audit_logs', ['event' => 'identity.password_reset_completed']);
 

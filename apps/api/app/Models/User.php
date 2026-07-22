@@ -61,6 +61,11 @@ class User extends Authenticatable
         return $this->hasMany(UserMfaRecoveryCode::class);
     }
 
+    public function mobileRefreshTokenFamilies(): HasMany
+    {
+        return $this->hasMany(MobileRefreshTokenFamily::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

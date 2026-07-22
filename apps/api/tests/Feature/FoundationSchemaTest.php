@@ -35,6 +35,8 @@ class FoundationSchemaTest extends TestCase
             'personal_access_tokens',
             'user_mfa_methods',
             'user_mfa_recovery_codes',
+            'mobile_refresh_token_families',
+            'mobile_refresh_tokens',
         ];
 
         foreach ($expectedTables as $table) {

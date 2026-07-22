@@ -64,6 +64,9 @@ erDiagram
     USERS ||--o{ USER_MFA_METHODS : secures
     USERS ||--o{ USER_MFA_RECOVERY_CODES : recovers
     USERS ||--o{ PERSONAL_ACCESS_TOKENS : authenticates
+    USERS ||--o{ MOBILE_REFRESH_TOKEN_FAMILIES : owns
+    MOBILE_REFRESH_TOKEN_FAMILIES ||--o{ MOBILE_REFRESH_TOKENS : rotates
+    MOBILE_REFRESH_TOKEN_FAMILIES o|--o{ PERSONAL_ACCESS_TOKENS : binds
     USERS ||--o{ AUDIT_LOGS : acts
 
     USERS {
@@ -185,11 +188,30 @@ erDiagram
     PERSONAL_ACCESS_TOKENS {
         bigint id PK
         uuid tokenable_id FK
+        uuid refresh_token_family_id FK
         string name
         string token_hash UK
         json abilities
         datetime last_used_at
         datetime mfa_verified_at
+        datetime expires_at
+    }
+    MOBILE_REFRESH_TOKEN_FAMILIES {
+        uuid id PK
+        uuid user_id FK
+        string device_name
+        datetime mfa_verified_at
+        datetime absolute_expires_at
+        datetime last_rotated_at
+        datetime revoked_at
+        string revocation_reason
+    }
+    MOBILE_REFRESH_TOKENS {
+        uuid id PK
+        uuid family_id FK
+        uuid parent_id FK
+        string token_hash UK
+        datetime consumed_at
         datetime expires_at
     }
     AUDIT_LOGS {
@@ -213,6 +235,7 @@ Aturan penting:
 - Satu user boleh menjadi anggota beberapa departemen, tetapi hanya satu membership aktif yang primary.
 - Location membership selalu eksplisit dan tidak diwariskan dari department.
 - Role assignment selalu memiliki company scope; di dalamnya dapat dibatasi lagi berdasarkan departemen dan/atau lokasi.
+- Satu mobile refresh-token family mewakili satu perangkat; token lama tetap disimpan sebagai hash untuk mendeteksi replay tanpa menyimpan secret plaintext.
 - Assignment privileged hanya dibuat dari access request approved, memiliki expiry maksimum 90 hari, dan requester/target/approver harus berbeda.
 - TOTP secret terenkripsi, kode tidak dapat dipakai ulang, dan recovery code hanya disimpan sebagai hash sekali pakai.
 - Device token hanya disimpan sebagai hash; idle timeout dibedakan per surface dan diperiksa sebelum `last_used_at` diperbarui.

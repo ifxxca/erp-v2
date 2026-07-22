@@ -6,6 +6,7 @@ use App\Http\Middleware\RequireRecentMfa;
 use App\Http\Middleware\RequireScopedPermission;
 use App\Modules\Identity\Application\AccessGovernanceException;
 use App\Modules\Identity\Application\MfaException;
+use App\Modules\Identity\Application\RefreshTokenException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'code' => $exception->errorCode,
         ], $exception->httpStatus));
         $exceptions->render(fn (MfaException $exception) => response()->json([
+            'message' => $exception->getMessage(),
+            'code' => $exception->errorCode,
+        ], $exception->httpStatus));
+        $exceptions->render(fn (RefreshTokenException $exception) => response()->json([
             'message' => $exception->getMessage(),
             'code' => $exception->errorCode,
         ], $exception->httpStatus));

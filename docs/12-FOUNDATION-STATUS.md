@@ -16,6 +16,7 @@ Status date: 2026-07-22
 - Hashed single-use recovery codes, regeneration, optional-MFA disable, and mandatory MFA for active privileged assignments.
 - Non-enumerating password recovery with hashed, expiring, single-use reset tokens and device revocation after reset.
 - Device-session listing and scoped revocation plus surface-specific idle and absolute token lifetimes.
+- Hashed, rotating mobile refresh-token families with 30-day absolute expiry, MFA binding, replay detection, and family-wide revocation.
 - Explicit user-location memberships and department/location membership checks in effective permission resolution.
 - ULID identity schema for companies, departments, locations, memberships, roles, permissions, access requests, and role assignments.
 - Seed data for two legal entities, eight departments per company, initial system roles, and initial permission catalog.
@@ -28,7 +29,7 @@ Status date: 2026-07-22
 
 ## Verified locally
 
-- API test suite: 42 tests, 216 assertions.
+- API test suite: 49 tests, 278 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -36,6 +37,7 @@ Status date: 2026-07-22
 - Privileged self-approval denial, MFA gate, maximum expiry, duplicate request, rejection, wrong-company denial, and immediate token revocation.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
+- Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.
 - ERP and Operations production builds.
 - Web lint.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
@@ -50,10 +52,9 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - Identity administration UI.
-- Rotating mobile refresh-token family and reuse detection.
 - Organization/access administration screens.
 - OpenAPI generated clients.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 
-These belong to the next identity vertical slice; mobile authentication must not be described as production-ready until refresh-token rotation and reuse detection are complete.
+The mobile token lifecycle is implemented, but production deployment still requires PostgreSQL/container verification and mobile OS secure-storage integration.

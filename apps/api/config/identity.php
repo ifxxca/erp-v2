@@ -6,6 +6,7 @@ return [
     'totp_window' => (int) env('IDENTITY_TOTP_WINDOW', 1),
     'recovery_code_count' => (int) env('IDENTITY_RECOVERY_CODE_COUNT', 8),
     'privileged_assignment_max_days' => (int) env('IDENTITY_PRIVILEGED_ASSIGNMENT_MAX_DAYS', 90),
+    'mobile_refresh_token_lifetime_days' => (int) env('IDENTITY_MOBILE_REFRESH_TOKEN_LIFETIME_DAYS', 30),
 
     'token_lifetime_minutes' => [
         'erp_web' => (int) env('IDENTITY_ERP_TOKEN_LIFETIME_MINUTES', 720),
