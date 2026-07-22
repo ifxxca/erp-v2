@@ -115,6 +115,40 @@ export type DeviceSession = {
   current: boolean
 }
 
+export type RoleCatalogPermission = {
+  id: string
+  code: string
+  module: string
+  resource: string
+  action: string
+  description: string | null
+  global_only: boolean
+}
+
+export type ManagedRole = {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  is_system: boolean
+  is_privileged: boolean
+  assignment_scope: 'global' | 'company' | 'department' | 'location'
+  permission_ids: string[]
+  permission_count: number
+  assignment_count: number
+  active_assignment_count: number
+  has_history: boolean
+  can_edit: boolean
+}
+
+export type RoleCatalog = {
+  data: {
+    roles: ManagedRole[]
+    permissions: RoleCatalogPermission[]
+  }
+  meta: { can_manage: boolean }
+}
+
 export type AccessCatalogUser = {
   id: string
   name: string

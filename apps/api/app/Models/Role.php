@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
@@ -31,5 +32,15 @@ class Role extends Model
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'role_permissions');
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(UserRoleAssignment::class);
+    }
+
+    public function accessRequests(): HasMany
+    {
+        return $this->hasMany(AccessRequest::class);
     }
 }

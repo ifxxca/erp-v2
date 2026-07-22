@@ -51,6 +51,8 @@ class FoundationSeeder extends Seeder
             ['identity.access.request', 'identity', 'access', 'request'],
             ['identity.access.approve', 'identity', 'access', 'approve'],
             ['identity.access.revoke', 'identity', 'access', 'revoke'],
+            ['identity.role.view', 'identity', 'role', 'view'],
+            ['identity.role.manage', 'identity', 'role', 'manage'],
             ['audit.log.view', 'audit', 'log', 'view'],
             ['audit.export.create', 'audit', 'export', 'create'],
             ['fleet.vehicle.view', 'fleet', 'vehicle', 'view'],
@@ -103,6 +105,8 @@ class FoundationSeeder extends Seeder
                 'identity.user.status.manage',
                 'identity.access.request',
                 'identity.access.revoke',
+                'identity.role.view',
+                'identity.role.manage',
                 'audit.log.view',
             ])
             ->pluck('id'));

@@ -37,6 +37,7 @@ import {
   IconLogout,
   IconSearch,
   IconShieldCheck,
+  IconUserShield,
   IconUserPlus,
   IconUsers,
 } from '@tabler/icons-react'
@@ -53,16 +54,21 @@ import {
 } from './api'
 
 type AuthStage = 'login' | 'mfa' | 'loading' | 'ready'
-type Workspace = 'identity' | 'access' | 'security'
+type Workspace = 'identity' | 'access' | 'roles' | 'security'
 
 const AccessReview = lazy(() => import('./AccessReview'))
 const IdentityDrawer = lazy(() => import('./IdentityDrawer'))
 const InvitationModal = lazy(() => import('./InvitationModal'))
+const RoleManagement = lazy(() => import('./RoleManagement'))
 const SecurityCenter = lazy(() => import('./SecurityCenter'))
 
 type CompanyResponse = {
   data: Company[]
-  meta: { can_manage_identity_status: boolean }
+  meta: {
+    can_manage_identity_status: boolean
+    can_view_roles: boolean
+    can_manage_roles: boolean
+  }
 }
 
 type UserPage = {
@@ -75,6 +81,7 @@ type UserPage = {
 const workspaceCopy: Record<Workspace, { eyebrow: string; title: string; description: string }> = {
   identity: { eyebrow: 'Identity administration', title: 'Employee directory', description: 'Lifecycle employee, employment, dan organisasi dalam satu sumber kebenaran.' },
   access: { eyebrow: 'Access governance', title: 'Privileged access review', description: 'Maker-checker, MFA, scope, dan expiry untuk akses sensitif.' },
+  roles: { eyebrow: 'Authorization governance', title: 'Roles & permissions', description: 'Katalog capability dan custom role dengan perubahan yang terlindungi dan dapat diaudit.' },
   security: { eyebrow: 'Personal security', title: 'Security & sessions', description: 'Kelola MFA, step-up verification, dan perangkat yang memiliki akses.' },
 }
 
@@ -87,6 +94,7 @@ function App() {
   const [workspace, setWorkspace] = useState<Workspace>('identity')
   const [companies, setCompanies] = useState<Company[]>([])
   const [canManageStatus, setCanManageStatus] = useState(false)
+  const [canViewRoles, setCanViewRoles] = useState(false)
   const [companyId, setCompanyId] = useState('')
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [users, setUsers] = useState<IdentityUser[]>([])
@@ -114,6 +122,8 @@ function App() {
     setToken('')
     setCurrentUser(null)
     setCompanies([])
+    setCanManageStatus(false)
+    setCanViewRoles(false)
     setCompanyId('')
     setSelectedUser(null)
     setStage('login')
@@ -145,7 +155,9 @@ function App() {
       setCurrentUser(user)
       setCompanies(companyResponse.data)
       setCanManageStatus(companyResponse.meta.can_manage_identity_status)
+      setCanViewRoles(companyResponse.meta.can_view_roles)
       setCompanyId((current) => current || companyResponse.data[0]?.id || '')
+      if (!companyResponse.data.length && companyResponse.meta.can_view_roles) setWorkspace('roles')
       setStage('ready')
     }).catch(handleError)
     return () => { active = false }
@@ -240,6 +252,7 @@ function App() {
           <Stack gap={4}>
             <NavLink label="Identity" description="Employee lifecycle" leftSection={<IconUsers size={19} />} active={workspace === 'identity'} onClick={() => navigate('identity')} />
             <NavLink label="Access review" description="Privileged access" leftSection={<IconShieldCheck size={19} />} active={workspace === 'access'} disabled={!canAccessReview} onClick={() => navigate('access')} />
+            <NavLink label="Roles & permissions" description="Authorization catalog" leftSection={<IconUserShield size={19} />} active={workspace === 'roles'} disabled={!canViewRoles} onClick={() => navigate('roles')} />
             <NavLink label="Security" description="MFA & sessions" leftSection={<IconLock size={19} />} active={workspace === 'security'} onClick={() => navigate('security')} />
           </Stack>
         </AppShell.Section>
@@ -258,7 +271,7 @@ function App() {
         <Stack gap="xl" maw={1480} mx="auto">
           <Group justify="space-between" align="flex-end">
             <div><Text className="eyebrow">{copy.eyebrow}</Text><Title order={1}>{copy.title}</Title><Text c="dimmed" mt={5}>{copy.description}</Text></div>
-            {workspace !== 'security' && <Select
+            {(workspace === 'identity' || workspace === 'access') && <Select
               label="Legal entity"
               w={{ base: '100%', sm: 330 }}
               leftSection={<IconBuildingSkyscraper size={17} />}
@@ -314,6 +327,7 @@ function App() {
 
           <Suspense fallback={<Center py={80}><Loader color="forest" /></Center>}>
             {workspace === 'access' && activeCompany && organization && currentUser && <AccessReview token={token} currentUser={currentUser} company={activeCompany} organization={organization} onError={handleError} onMessage={showSuccess} />}
+            {workspace === 'roles' && <RoleManagement token={token} onError={handleError} onMessage={showSuccess} />}
             {workspace === 'security' && <SecurityCenter token={token} onError={handleError} onSessionEnded={resetSession} />}
           </Suspense>
         </Stack>

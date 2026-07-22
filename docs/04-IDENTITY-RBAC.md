@@ -52,7 +52,10 @@ RBAC menjawab "boleh melakukan aksi apa". Domain policy tetap menjawab "boleh me
 - Role adalah kumpulan permission yang dapat dikelola secara terkendali.
 - Permission adalah capability stabil dengan pola `module.resource.action`.
 - Role mendeklarasikan `assignment_scope` (`global`, `company`, `department`, atau `location`); request tidak boleh memilih scope yang lebih luas atau berbeda dari policy tersebut.
-- Role system tidak dapat dihapus; perubahan permission-nya harus melalui review dan audit.
+- Role system dan permission catalog adalah baseline release-managed: UI menampilkannya sebagai read-only dan perubahan dilakukan melalui migration/seeder yang direview.
+- Runtime administration hanya dapat membuat custom role dengan scope `company`, `department`, atau `location`; custom role tidak dapat menerima permission global-only.
+- Perubahan profil dan permission custom role membutuhkan permission global `identity.role.manage`, recent MFA, alasan perubahan, dan audit append-only.
+- Custom role dengan assignment atau access-request history tidak dapat dihapus. Classification scope/privileged tidak dapat berubah selama ada assignment aktif atau request pending.
 - UI menu tidak menjadi pengaman. API selalu melakukan authorization sendiri.
 
 ### Role assignment
@@ -93,7 +96,7 @@ Tidak ada role `super_admin` yang secara implisit melewati semua policy. Aksi te
 
 | Module | Permission contoh |
 |---|---|
-| Identity | `identity.user.view`, `identity.user.manage`, `identity.user.status.manage` (global-only), `identity.employment.manage`, `identity.access.request`, `.approve`, `.revoke` |
+| Identity | `identity.user.view`, `identity.user.manage`, `identity.user.status.manage` (global-only), `identity.role.view` (global-only), `identity.role.manage` (global-only), `identity.employment.manage`, `identity.access.request`, `.approve`, `.revoke` |
 | Procurement | `procurement.purchase-request.create`, `.view`, `.submit`, `.approve`; `procurement.purchase-order.issue` |
 | Finance | `finance.payment-schedule.view`, `.manage`; `finance.payment.post`, `.reverse` |
 | Inventory | `inventory.receipt.create`, `.confirm`; `inventory.movement.create`; `inventory.stock-count.approve` |

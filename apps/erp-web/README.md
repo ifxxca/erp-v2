@@ -33,6 +33,14 @@ The Security & Sessions workspace adds:
 - device-session inventory, single-session revoke, and password-confirmed revoke-all;
 - explicit logout when the current session or all sessions are revoked.
 
+The Roles & Permissions workspace adds:
+
+- searchable system and custom role catalog with assignment/history indicators;
+- read-only system-role and stable-permission baseline;
+- custom-role creation, profile classification, and permission mapping;
+- global capability gates, recent-MFA mutation enforcement, required audit reasons,
+  and explicit deletion/history guardrails.
+
 ```powershell
 npm run dev:erp
 ```

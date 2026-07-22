@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.8.0
+  version: 0.9.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -506,6 +506,134 @@ paths:
           description: User, company, or active membership not found.
         "422":
           $ref: "#/components/responses/ValidationFailed"
+  /identity/roles:
+    get:
+      operationId: listRoles
+      summary: Return the global role and stable permission catalog.
+      description: Requires global identity.role.view. System roles are projected as read-only; can_manage is derived server-side.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Role and permission administration catalog.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleCatalogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createRole
+      summary: Create a non-global custom role and its initial permission mapping.
+      description: Requires global identity.role.manage and MFA verified within 15 minutes. Global-only permissions are rejected.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+      responses:
+        "201":
+          description: Custom role created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleMutationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/roles/{roleId}:
+    patch:
+      operationId: updateRole
+      summary: Update a custom role profile and classification.
+      description: Requires global identity.role.manage and recent MFA. System roles are protected; classification changes conflict with active assignments or pending requests.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoleRequest"
+      responses:
+        "200":
+          description: Custom role updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleMutationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    delete:
+      operationId: deleteRole
+      summary: Delete a custom role that has never been assigned or requested.
+      description: Requires global identity.role.manage, recent MFA, and an auditable reason. System roles and roles with history are protected.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleChangeReason"
+      responses:
+        "204":
+          description: Custom role deleted.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /identity/roles/{roleId}/permissions:
+    put:
+      operationId: syncRolePermissions
+      summary: Replace the complete permission mapping of a custom role.
+      description: Requires global identity.role.manage and recent MFA. Permission codes remain release-managed and global-only permissions are rejected.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RoleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRolePermissionsRequest"
+      responses:
+        "200":
+          description: Permission mapping replaced.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleMutationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
   /identity/companies:
     get:
       operationId: listIdentityCompanies
@@ -923,6 +1051,13 @@ components:
       schema:
         type: string
         pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    RoleId:
+      name: roleId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
     TokenId:
       name: tokenId
       in: path
@@ -1320,9 +1455,13 @@ components:
             $ref: "#/components/schemas/IdentityCompany"
         meta:
           type: object
-          required: [can_manage_identity_status]
+          required: [can_manage_identity_status, can_view_roles, can_manage_roles]
           properties:
             can_manage_identity_status:
+              type: boolean
+            can_view_roles:
+              type: boolean
+            can_manage_roles:
               type: boolean
     DepartmentSummary:
       type: object
@@ -1586,6 +1725,165 @@ components:
         email:
           type: string
           format: email
+    RolePermissionSummary:
+      type: object
+      required: [id, code, module, resource, action, description]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        module:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        description:
+          type: [string, "null"]
+    RoleCatalogPermission:
+      allOf:
+        - $ref: "#/components/schemas/RolePermissionSummary"
+        - type: object
+          required: [global_only]
+          properties:
+            global_only:
+              type: boolean
+    ManagedRole:
+      type: object
+      required: [id, code, name, description, is_system, is_privileged, assignment_scope, permission_ids, permission_count, assignment_count, active_assignment_count, has_history, can_edit]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: [string, "null"]
+        is_system:
+          type: boolean
+        is_privileged:
+          type: boolean
+        assignment_scope:
+          $ref: "#/components/schemas/RoleAssignmentScope"
+        permission_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        permission_count:
+          type: integer
+        assignment_count:
+          type: integer
+        active_assignment_count:
+          type: integer
+        has_history:
+          type: boolean
+        can_edit:
+          type: boolean
+    RoleCatalogResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [roles, permissions]
+          properties:
+            roles:
+              type: array
+              items:
+                $ref: "#/components/schemas/ManagedRole"
+            permissions:
+              type: array
+              items:
+                $ref: "#/components/schemas/RoleCatalogPermission"
+        meta:
+          type: object
+          required: [can_manage]
+          properties:
+            can_manage:
+              type: boolean
+    RoleChangeReason:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    CustomRoleProfile:
+      type: object
+      required: [name, is_privileged, assignment_scope, reason]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: [string, "null"]
+          maxLength: 2000
+        is_privileged:
+          type: boolean
+        assignment_scope:
+          type: string
+          enum: [company, department, location]
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    CreateRoleRequest:
+      allOf:
+        - $ref: "#/components/schemas/CustomRoleProfile"
+        - type: object
+          required: [code, permission_ids]
+          properties:
+            code:
+              type: string
+              pattern: "^[a-z][a-z0-9-]{2,127}$"
+            permission_ids:
+              type: array
+              minItems: 1
+              maxItems: 100
+              uniqueItems: true
+              items:
+                type: string
+    UpdateRoleRequest:
+      $ref: "#/components/schemas/CustomRoleProfile"
+    SyncRolePermissionsRequest:
+      allOf:
+        - $ref: "#/components/schemas/RoleChangeReason"
+        - type: object
+          required: [permission_ids]
+          properties:
+            permission_ids:
+              type: array
+              minItems: 1
+              maxItems: 100
+              uniqueItems: true
+              items:
+                type: string
+    RoleMutationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/RoleSummary"
+            - type: object
+              required: [description, is_system, is_privileged, assignment_scope, permissions]
+              properties:
+                description:
+                  type: [string, "null"]
+                is_system:
+                  type: boolean
+                is_privileged:
+                  type: boolean
+                assignment_scope:
+                  $ref: "#/components/schemas/RoleAssignmentScope"
+                permissions:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/RolePermissionSummary"
     RoleSummary:
       type: object
       required: [id, code, name]

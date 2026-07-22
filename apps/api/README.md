@@ -36,6 +36,8 @@ API base URL: `http://localhost:8000/api/v1`.
 - `GET /identity/companies/{company}/users` and `GET /identity/companies/{company}/users/{user}` expose a company-scoped identity directory and history.
 - `PUT /identity/companies/{company}/users/{user}/organization-memberships` requires `identity.employment.manage`; it schedules effective-dated organization changes without overwriting history.
 - `PATCH /identity/users/{user}/status` requires global `identity.user.status.manage` plus recent MFA; suspend/disable revoke all device sessions and mobile refresh families.
+- `GET /identity/roles` requires global `identity.role.view` and returns the role/permission catalog plus server-derived management capability.
+- `POST /identity/roles`, `PATCH|DELETE /identity/roles/{role}`, and `PUT /identity/roles/{role}/permissions` require global `identity.role.manage`, recent MFA, and an audit reason.
 - `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
 - `POST /identity/users/{user}/companies/{company}/terminate` requires `identity.employment.manage`, terminates scoped employment, and revokes stale access.
 - `GET /identity/companies/{company}/access-requests` returns the scoped approval queue.
@@ -49,6 +51,8 @@ API base URL: `http://localhost:8000/api/v1`.
 Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. Privileged assignments cannot be approved until the target user has active MFA.
 
 Every role declares an `assignment_scope`. Company access requests reject global-only roles and validate that company, department, or location scope matches the role policy and the target's active organization membership.
+
+Permission codes and system-role mappings are release-managed baselines. Runtime administration may create and maintain only non-global custom roles; global-only permissions cannot be attached to them, and roles with assignment or request history cannot be deleted.
 
 Employment and organization placement are HR-owned through `identity.employment.manage`. IT/security owns global credential status through a global-only `identity.user.status.manage` assignment. A company-scoped role can never change global identity status, reactivation is rejected unless active employment exists, and an invited identity must complete invitation acceptance rather than being manually activated.
 

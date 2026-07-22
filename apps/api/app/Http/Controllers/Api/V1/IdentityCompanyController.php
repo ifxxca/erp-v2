@@ -69,6 +69,8 @@ class IdentityCompanyController extends Controller
                     $user,
                     'identity.user.status.manage',
                 ),
+                'can_view_roles' => $this->permissions->allowsGlobal($user, 'identity.role.view'),
+                'can_manage_roles' => $this->permissions->allowsGlobal($user, 'identity.role.manage'),
             ],
         ]);
     }

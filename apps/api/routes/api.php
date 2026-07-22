@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\MobileTokenController;
 use App\Http\Controllers\Api\V1\OrganizationMembershipController;
 use App\Http\Controllers\Api\V1\PasswordRecoveryController;
 use App\Http\Controllers\Api\V1\PrivilegedAccessController;
+use App\Http\Controllers\Api\V1\RoleAdministrationController;
 use App\Http\Controllers\Api\V1\SessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +58,16 @@ Route::prefix('v1')->group(function (): void {
             )->middleware('permission.scoped:identity.employment.manage');
 
             Route::get('/identity/companies', [IdentityCompanyController::class, 'index']);
+            Route::get('/identity/roles', [RoleAdministrationController::class, 'index'])
+                ->middleware('permission.global:identity.role.view');
+            Route::post('/identity/roles', [RoleAdministrationController::class, 'store'])
+                ->middleware(['permission.global:identity.role.manage', 'mfa.recent']);
+            Route::patch('/identity/roles/{role}', [RoleAdministrationController::class, 'update'])
+                ->middleware(['permission.global:identity.role.manage', 'mfa.recent']);
+            Route::put('/identity/roles/{role}/permissions', [RoleAdministrationController::class, 'syncPermissions'])
+                ->middleware(['permission.global:identity.role.manage', 'mfa.recent']);
+            Route::delete('/identity/roles/{role}', [RoleAdministrationController::class, 'destroy'])
+                ->middleware(['permission.global:identity.role.manage', 'mfa.recent']);
 
             Route::prefix('/identity/companies/{company}')->group(function (): void {
                 Route::get('/organization', [IdentityCompanyController::class, 'organization'])
