@@ -96,10 +96,10 @@ class MobileRefreshTokenApiTest extends TestCase
 
         $this->postJson('/api/v1/auth/mobile/refresh', [
             'refresh_token' => $firstOldRefresh,
-        ])->assertUnauthorized()->assertExactJson([
+        ])->assertUnauthorized()->assertJson([
             'message' => 'The refresh token is invalid or expired.',
             'code' => 'REFRESH_TOKEN_INVALID',
-        ]);
+        ])->assertJsonStructure(['request_id']);
 
         $this->assertSame('refresh_token_reuse', $firstFamily->fresh()->revocation_reason);
         $this->assertNotNull($firstFamily->fresh()->revoked_at);

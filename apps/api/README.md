@@ -16,6 +16,12 @@ docker compose --env-file infrastructure/.env.example -f infrastructure/compose.
 
 API base URL: `http://localhost:8000/api/v1`.
 
+## Request controls
+
+Every API response includes `X-Request-ID`. Clients may send an 8–128 character URL-safe value; invalid or missing values are replaced by a server-generated ULID. Error JSON always contains `message`, stable `code`, and the same `request_id`; validation errors additionally contain `errors`.
+
+Authenticated business mutations accept an optional `Idempotency-Key` containing 16–128 URL-safe characters. The key is scoped to the authenticated identity and exact route/query/canonical JSON payload. A completed request is replayed for 24 hours with `Idempotency-Replayed: true`; reuse for another request returns `409 IDEMPOTENCY_KEY_REUSED`, while an equivalent request still running returns `409 IDEMPOTENCY_REQUEST_IN_PROGRESS` plus `Retry-After`. Failed responses are not cached. Clients must reuse the same key only when retrying the same logical command.
+
 ## Identity endpoints
 
 - `POST /auth/login` issues an expiring bearer token; mobile login also starts one 30-day device-bound refresh family.

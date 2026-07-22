@@ -38,12 +38,12 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 | Area | Status | Next gate |
 |---|---|---|
 | Product scope | P0 accepted | Validasi flow detail bersama domain owner |
-| Architecture | P0 accepted | Scaffold dan deployment topology detail |
-| Logical ERD | Draft baseline | Review per domain dan buat physical schema |
-| Identity/RBAC | Proposed | Setujui org structure dan access matrix |
+| Architecture | Foundation implemented | Selesaikan file, sequence, outbox, observability, dan deployment verification |
+| Logical ERD | Foundation physical schema | Review dan implementasi schema Fleet/Maintenance |
+| Identity/RBAC | Implemented and verified | Access certification/SoD reporting dan production environment verification |
 | Data import | Proposed | Profiling serta data contract pertama |
-| Delivery plan | Proposed | Konfirmasi team capacity dan pilot |
-| Engineering standard | Proposed | Implementasikan pada repository scaffold |
+| Delivery plan | Accepted baseline | Konfirmasi team capacity dan onboarding pilot |
+| Engineering standard | In implementation | Lengkapi shared platform controls dan observability |
 
 ## Aturan perubahan
 

@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveIdentity;
+use App\Http\Middleware\EnsureIdempotentRequest;
 use App\Http\Middleware\EnsureMfaAuthenticated;
+use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\RequireGlobalPermission;
 use App\Http\Middleware\RequireRecentMfa;
 use App\Http\Middleware\RequireScopedPermission;
@@ -19,8 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->api(prepend: [RequestCorrelation::class]);
         $middleware->alias([
             'identity.active' => EnsureActiveIdentity::class,
+            'idempotent' => EnsureIdempotentRequest::class,
             'mfa.authenticated' => EnsureMfaAuthenticated::class,
             'mfa.recent' => RequireRecentMfa::class,
             'permission.scoped' => RequireScopedPermission::class,
@@ -28,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*') || $request->expectsJson());
         $exceptions->render(fn (AccessGovernanceException $exception) => response()->json([
             'message' => $exception->getMessage(),
             'code' => $exception->errorCode,
@@ -40,4 +45,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'message' => $exception->getMessage(),
             'code' => $exception->errorCode,
         ], $exception->httpStatus));
+        $exceptions->respond(function ($response) {
+            if (! request()->is('api/*')) {
+                return $response;
+            }
+
+            return RequestCorrelation::decorate($response, request());
+        });
     })->create();

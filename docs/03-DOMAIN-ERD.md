@@ -691,6 +691,30 @@ erDiagram
 | `comments` | Percakapan polymorphic bila domain mengizinkan |
 | `audit_logs` | Jejak perubahan immutable untuk operasi sensitif |
 
+### Request control
+
+```mermaid
+erDiagram
+    USERS ||--o{ IDEMPOTENCY_KEYS : owns
+
+    IDEMPOTENCY_KEYS {
+        ulid id PK
+        ulid user_id FK
+        char key_hash UK
+        string request_method
+        string request_path
+        char request_fingerprint
+        string status
+        int response_status
+        json response_headers
+        text response_body
+        datetime completed_at
+        datetime expires_at
+    }
+```
+
+Raw idempotency key tidak disimpan. Unique scope adalah `user_id + key_hash`; route, query, dan canonical JSON payload masuk ke fingerprint. Record `processing` kedaluwarsa setelah lima menit agar crash dapat di-retry, sedangkan response `completed` disimpan 24 jam. Response gagal dan response terlalu besar tidak disimpan.
+
 ## Constraint lintas domain
 
 - Nomor dokumen unik setidaknya per tenant/perusahaan dan tipe dokumen.

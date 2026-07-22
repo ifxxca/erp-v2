@@ -134,7 +134,8 @@ function App() {
       if (cause.status === 401) resetSession()
       if (cause.code === 'MFA_CHALLENGE_REQUIRED') setStage('mfa')
       const detail = cause.errors ? Object.values(cause.errors).flat()[0] : null
-      notifications.show({ color: 'red', title: 'Permintaan gagal', message: detail ?? cause.message })
+      const reference = cause.requestId ? ` · Ref ${cause.requestId}` : ''
+      notifications.show({ color: 'red', title: 'Permintaan gagal', message: `${detail ?? cause.message}${reference}` })
       return
     }
     notifications.show({ color: 'red', title: 'API tidak dapat dijangkau', message: 'Periksa service dan konfigurasi URL.' })

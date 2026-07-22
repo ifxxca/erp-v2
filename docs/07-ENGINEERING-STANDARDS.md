@@ -82,6 +82,7 @@ Nama package detail mengikuti convention Laravel, React/Vite, dan Flutter, tetap
 - OpenAPI adalah artifact build dan divalidasi di CI.
 - Breaking change memerlukan versi atau compatibility plan.
 - Create/command yang dapat di-retry dari mobile atau integration wajib mendukung idempotency key.
+- Client membuat satu `Idempotency-Key` per logical command dan menggunakan key yang sama pada retry. Key tidak boleh dipakai ulang untuk route/payload lain; server menyimpan hanya SHA-256 hash, fingerprint request, dan response terbatas selama 24 jam.
 - Optimistic concurrency/version check dipakai untuk update yang rawan lost update.
 
 ## Security baseline
@@ -138,6 +139,7 @@ Deployment staging menjalankan smoke test dan migration rehearsal. Production me
 ## Observability
 
 - Structured log memuat timestamp, level, service/module, request ID, actor ID aman, dan error code.
+- `X-Request-ID` dari client hanya diterima bila formatnya aman; server menghasilkan ULID bila header hilang/tidak valid dan mengembalikan ID yang sama pada header response serta error envelope.
 - Metrics minimum: request latency/error, DB/queue health, failed jobs, auth failure, approval aging, import rejection, dan domain control metric.
 - Distributed trace digunakan untuk API-worker/integration flow.
 - Alert harus actionable, memiliki owner, severity, serta runbook.

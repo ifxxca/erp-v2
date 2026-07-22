@@ -89,6 +89,7 @@ Setiap module memiliki Http, Actions, DTOs, Models, Policies, Services, Events, 
 - OpenAPI adalah contract source of truth.
 - Generated typed client untuk web/mobile bila tooling mendukung.
 - Consistent error envelope, pagination, filtering, and request ID.
+- API ingress normalizes `X-Request-ID`; authenticated business mutations can persist and replay an exact response by identity-scoped `Idempotency-Key` without rerunning domain side effects.
 - `Idempotency-Key` untuk payment, stock, approval, pickup resolution, dan offline mutation.
 - Optimistic version/ETag untuk edit yang rawan conflict.
 

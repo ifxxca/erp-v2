@@ -62,10 +62,11 @@ class IdentityLifecycleApiTest extends TestCase
             'surface' => 'erp_web',
             'device_name' => 'Browser',
         ])->assertUnauthorized()
-            ->assertExactJson([
+            ->assertJson([
                 'message' => 'Email or password is invalid.',
                 'code' => 'INVALID_CREDENTIALS',
-            ]);
+            ])
+            ->assertJsonStructure(['request_id']);
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_user_id' => null,
@@ -96,10 +97,11 @@ class IdentityLifecycleApiTest extends TestCase
 
         $this->getJson('/api/v1/me')
             ->assertForbidden()
-            ->assertExactJson([
+            ->assertJson([
                 'message' => 'Identity is not active.',
                 'code' => 'IDENTITY_INACTIVE',
-            ]);
+            ])
+            ->assertJsonStructure(['request_id']);
     }
 
     public function test_authorized_admin_can_invite_and_invitation_is_single_use(): void

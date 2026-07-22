@@ -1,8 +1,17 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.10.0
-  description: Contract-first API shared by ERP Web, Operations Web, and mobile.
+  version: 0.11.0
+  description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
+x-request-controls:
+  correlation:
+    request-header: X-Request-ID
+    response-header: X-Request-ID
+    invalid-or-missing: Server generates a ULID.
+  idempotency:
+    request-header: Idempotency-Key
+    replay-header: Idempotency-Replayed
+    retention-hours: 24
 servers:
   - url: http://localhost:8000/api/v1
     description: Local development
@@ -413,6 +422,8 @@ paths:
       description: Requires identity.user.manage in the submitted company_id scope.
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -422,6 +433,9 @@ paths:
       responses:
         "201":
           description: Invitation created and sent; the plaintext token is never returned.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -441,6 +455,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -450,6 +465,9 @@ paths:
       responses:
         "200":
           description: Identity status changed.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -476,6 +494,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -490,6 +509,9 @@ paths:
       responses:
         "200":
           description: Membership terminated.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -530,6 +552,8 @@ paths:
       description: Requires global identity.role.manage and MFA verified within 15 minutes. Global-only permissions are rejected.
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -539,6 +563,9 @@ paths:
       responses:
         "201":
           description: Custom role created.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -558,6 +585,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/RoleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -567,6 +595,9 @@ paths:
       responses:
         "200":
           description: Custom role updated.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -587,6 +618,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/RoleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -596,6 +628,9 @@ paths:
       responses:
         "204":
           description: Custom role deleted.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
         "401":
           $ref: "#/components/responses/Unauthenticated"
         "403":
@@ -613,6 +648,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/RoleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -622,6 +658,9 @@ paths:
       responses:
         "200":
           description: Permission mapping replaced.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -761,6 +800,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CompanyId"
         - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -770,6 +810,9 @@ paths:
       responses:
         "200":
           description: Organization change scheduled.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -816,6 +859,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CompanyId"
         - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -825,6 +869,9 @@ paths:
       responses:
         "201":
           description: Standard role assigned.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -850,6 +897,7 @@ paths:
         - $ref: "#/components/parameters/CompanyId"
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/AssignmentId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -859,6 +907,9 @@ paths:
       responses:
         "200":
           description: Standard role assignment revoked.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -911,6 +962,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/CompanyId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -920,6 +972,9 @@ paths:
       responses:
         "201":
           description: Pending request created.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -988,6 +1043,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CompanyId"
         - $ref: "#/components/parameters/AccessRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         content:
           application/json:
@@ -996,6 +1052,9 @@ paths:
       responses:
         "200":
           description: Assignment created.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -1020,6 +1079,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CompanyId"
         - $ref: "#/components/parameters/AccessRequestId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -1029,6 +1089,9 @@ paths:
       responses:
         "200":
           description: Request rejected without creating an assignment.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -1053,6 +1116,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CompanyId"
         - $ref: "#/components/parameters/AssignmentId"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -1062,6 +1126,9 @@ paths:
       responses:
         "200":
           description: Assignment revoked.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
           content:
             application/json:
               schema:
@@ -1112,6 +1179,26 @@ components:
       type: http
       scheme: bearer
   parameters:
+    RequestId:
+      name: X-Request-ID
+      in: header
+      required: false
+      description: Client correlation identifier. Invalid or missing values are replaced with a server-generated ULID and returned in every response.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: A client-generated key for safely retrying an authenticated business mutation. Reuse with another route or payload returns 409.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
     UserId:
       name: userId
       in: path
@@ -1157,28 +1244,51 @@ components:
   responses:
     Unauthenticated:
       description: Authentication failed or is missing.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     Forbidden:
       description: Authenticated identity is inactive or lacks scoped permission.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     ValidationFailed:
       description: Request validation or lifecycle rule failed.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     Conflict:
       description: The requested lifecycle transition conflicts with current state.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+  headers:
+    XRequestId:
+      description: Correlation identifier for logs, audit records, and support diagnostics.
+      required: true
+      schema:
+        type: string
+    IdempotencyReplayed:
+      description: True when the response was replayed from a completed request instead of executing the command again.
+      schema:
+        type: string
+        enum: ["true", "false"]
   schemas:
     LoginRequest:
       type: object
@@ -2255,11 +2365,13 @@ components:
           type: integer
     Error:
       type: object
-      required: [message]
+      required: [message, code, request_id]
       properties:
         message:
           type: string
         code:
+          type: string
+        request_id:
           type: string
         errors:
           type: object

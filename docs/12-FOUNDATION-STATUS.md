@@ -28,6 +28,8 @@ Status date: 2026-07-22
 - ULID identity schema for companies, departments, locations, memberships, roles, permissions, access requests, and role assignments.
 - Seed data for two legal entities, eight departments per company, initial system roles, and initial permission catalog.
 - Company-aware permission resolver with active employment and assignment checks.
+- API-wide request correlation with normalized `X-Request-ID`, structured error envelopes, audit propagation, and safe 5xx masking.
+- Database-backed, identity-scoped mutation idempotency with canonical request fingerprints, atomic acquisition, exact response replay, in-progress/mismatch conflicts, failure recovery, retention cleanup, and hashed client keys.
 - React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
@@ -43,7 +45,7 @@ Status date: 2026-07-22
 
 ## Verified locally
 
-- API test suite: 80 tests, 428 assertions.
+- API test suite: 88 tests, 502 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -51,13 +53,14 @@ Status date: 2026-07-22
 - Privileged self-approval denial, MFA gate, maximum expiry, duplicate request, rejection, wrong-company denial, and immediate token revocation.
 - Access catalog isolation, global-role exclusion, role-scope validation, maker-history privacy, capability projection, and active-assignment listing.
 - Standard-access catalog isolation, privileged/global-role exclusion, company/department/location coverage, overlap denial, self-action/MFA gates, history, revocation, and scheduled-role classification protection.
+- Request-ID preservation/generation, correlated framework errors and audit records, canonical JSON replay without duplicate side effects, payload-mismatch denial, in-progress retry signaling, and failed-response recovery.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.
 - Identity directory scope/cross-company isolation, HR organization scheduling, invalid-scope and schedule-conflict denial, global-status boundaries, reactivation eligibility, and session revocation.
 - ERP and Operations production builds.
 - Web lint.
-- Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including invitation, TOTP enrollment, recovery-code presentation, mandatory MFA re-entry, session revocation, privileged request, approval, assignment creation, immediate revocation, system-role inspection, and the full custom-role create/edit/permission-sync/delete lifecycle.
+- Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including invitation, TOTP enrollment, recovery-code presentation, mandatory MFA re-entry, session revocation, privileged request/approval/revocation, standard scoped assignment/revocation/self-action guard, system-role inspection, and the full custom-role create/edit/permission-sync/delete lifecycle.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
 - Composer strict validation.
 - Composer dependency security audit.
@@ -70,6 +73,7 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - OpenAPI generated clients.
+- Remaining shared-platform foundations: file upload/finalize/scan, document sequence, transactional outbox/notification worker, and production observability.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 

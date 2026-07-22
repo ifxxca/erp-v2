@@ -22,7 +22,7 @@ class AuditLogger
             'event' => $event,
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),
-            'request_id' => $request?->header('X-Request-ID'),
+            'request_id' => $request?->attributes->get('request_id') ?? $request?->header('X-Request-ID'),
             'ip_address' => $request?->ip(),
             'user_agent' => $request?->userAgent(),
             'metadata' => $metadata,

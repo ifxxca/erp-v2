@@ -42,7 +42,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/auth/mfa/totp', [MfaController::class, 'disable'])
             ->middleware(['mfa.recent', 'throttle:3,1']);
 
-        Route::middleware('mfa.authenticated')->group(function (): void {
+        Route::middleware(['mfa.authenticated', 'idempotent'])->group(function (): void {
             Route::get('/auth/sessions', [SessionController::class, 'index']);
             Route::delete('/auth/sessions/{tokenId}', [SessionController::class, 'revoke'])
                 ->whereNumber('tokenId');

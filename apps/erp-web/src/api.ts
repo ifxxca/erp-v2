@@ -3,6 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000
 export class ApiError extends Error {
   status: number
   code?: string
+  requestId?: string
   errors?: Record<string, string[]>
 
   constructor(status: number, payload: ApiErrorPayload) {
@@ -10,6 +11,7 @@ export class ApiError extends Error {
     this.name = 'ApiError'
     this.status = status
     this.code = payload.code
+    this.requestId = payload.request_id
     this.errors = payload.errors
   }
 }
@@ -17,6 +19,7 @@ export class ApiError extends Error {
 type ApiErrorPayload = {
   message?: string
   code?: string
+  request_id?: string
   errors?: Record<string, string[]>
 }
 

@@ -50,3 +50,5 @@ npm run dev:erp
 API URL is configured through `.env` using `VITE_API_BASE_URL`.
 
 The current bearer token is kept in `sessionStorage` and never local persistent storage. This is an interim first-party web implementation; the target production boundary remains a secure HTTP-only cookie/BFF as described in the architecture documents.
+
+API errors surface the server-provided request reference in notifications so support can correlate a user-visible failure with structured logs and audit records.
