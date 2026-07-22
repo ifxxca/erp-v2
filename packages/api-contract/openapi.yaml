@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.3.0
+  version: 0.4.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile.
 servers:
   - url: http://localhost:8000/api/v1
@@ -43,6 +43,155 @@ paths:
           $ref: "#/components/responses/Unauthenticated"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /auth/mfa:
+    get:
+      operationId: getMfaStatus
+      summary: Return MFA enrollment and current-token assurance status.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: MFA status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaStatus"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+  /auth/mfa/totp/enroll:
+    post:
+      operationId: enrollTotp
+      summary: Start TOTP enrollment after password confirmation.
+      description: Replaces any unconfirmed enrollment; the encrypted-at-rest secret is returned only for setup.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordConfirmation"
+      responses:
+        "200":
+          description: Pending TOTP enrollment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TotpEnrollment"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Enrollment rate limit exceeded.
+  /auth/mfa/totp/confirm:
+    post:
+      operationId: confirmTotp
+      summary: Confirm a pending TOTP enrollment and issue recovery codes once.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TotpCode"
+      responses:
+        "200":
+          description: TOTP enabled and current token MFA-verified.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaActivation"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Confirmation rate limit exceeded.
+  /auth/mfa/challenge:
+    post:
+      operationId: challengeMfa
+      summary: Verify a TOTP or single-use recovery code for the current token.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaChallenge"
+      responses:
+        "200":
+          description: Current token MFA-verified and step-up window opened.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaChallengeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Challenge rate limit exceeded.
+  /auth/mfa/recovery-codes/regenerate:
+    post:
+      operationId: regenerateMfaRecoveryCodes
+      summary: Invalidate all previous recovery codes and return a new set once.
+      description: Requires MFA verified within 15 minutes.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: New recovery-code set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodeSet"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Regeneration rate limit exceeded.
+  /auth/mfa/totp:
+    delete:
+      operationId: disableTotp
+      summary: Disable optional TOTP and revoke every identity token.
+      description: Requires recent MFA and password; denied while any privileged assignment is active.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordConfirmation"
+      responses:
+        "200":
+          description: TOTP disabled and all tokens revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    const: disabled
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          description: Disable rate limit exceeded.
   /auth/invitations/accept:
     post:
       operationId: acceptInvitation
@@ -385,7 +534,7 @@ components:
           maxLength: 120
     TokenResponse:
       type: object
-      required: [token_type, access_token, expires_at]
+      required: [token_type, access_token, expires_at, mfa_required]
       properties:
         token_type:
           const: Bearer
@@ -394,6 +543,102 @@ components:
           description: Plaintext access token returned only at issuance.
         expires_at:
           type: string
+          format: date-time
+        mfa_required:
+          type: boolean
+          description: When true, call the MFA challenge before accessing protected application routes.
+    PasswordConfirmation:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          format: password
+    TotpCode:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    MfaChallenge:
+      type: object
+      required: [credential]
+      properties:
+        credential:
+          type: string
+          minLength: 6
+          maxLength: 64
+          description: Six-digit TOTP or formatted recovery code.
+    TotpEnrollment:
+      type: object
+      required: [secret, otpauth_url, status]
+      properties:
+        secret:
+          type: string
+          minLength: 32
+          description: Setup secret returned only while enrollment is pending.
+        otpauth_url:
+          type: string
+          format: uri
+        status:
+          const: pending
+    RecoveryCodeSet:
+      type: object
+      required: [recovery_codes]
+      properties:
+        recovery_codes:
+          type: array
+          minItems: 8
+          maxItems: 8
+          uniqueItems: true
+          items:
+            type: string
+    MfaActivation:
+      allOf:
+        - $ref: "#/components/schemas/RecoveryCodeSet"
+        - type: object
+          required: [status]
+          properties:
+            status:
+              const: active
+    MfaChallengeResponse:
+      type: object
+      required: [status, method, step_up_expires_at]
+      properties:
+        status:
+          const: verified
+        method:
+          type: string
+          enum: [totp, recovery_code]
+        step_up_expires_at:
+          type: string
+          format: date-time
+    MfaStatus:
+      type: object
+      required:
+        - required
+        - enabled
+        - status
+        - confirmed_at
+        - unused_recovery_codes
+        - current_token_verified_at
+      properties:
+        required:
+          type: boolean
+        enabled:
+          type: boolean
+        status:
+          type: string
+          enum: [not_configured, pending, active, disabled]
+        confirmed_at:
+          type: [string, "null"]
+          format: date-time
+        unused_recovery_codes:
+          type: integer
+          minimum: 0
+        current_token_verified_at:
+          type: [string, "null"]
           format: date-time
     AcceptInvitationRequest:
       type: object

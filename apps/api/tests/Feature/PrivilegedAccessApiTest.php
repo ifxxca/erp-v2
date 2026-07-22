@@ -9,6 +9,7 @@ use App\Models\PersonalAccessToken;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserCompanyMembership;
+use App\Models\UserMfaMethod;
 use App\Models\UserRoleAssignment;
 use App\Notifications\PrivilegedAccessNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,6 +44,13 @@ class PrivilegedAccessApiTest extends TestCase
         $approver = User::factory()->create();
         $this->grant($maker, $company, 'identity.access.request');
         $this->grant($approver, $company, 'identity.access.approve');
+        UserMfaMethod::query()->create([
+            'user_id' => $target->id,
+            'type' => 'totp',
+            'secret' => 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
+            'status' => 'active',
+            'confirmed_at' => now(),
+        ]);
         $validUntil = now()->addDays(30);
 
         $requestResponse = $this->withToken($this->tokenFor($maker))
@@ -107,6 +115,32 @@ class PrivilegedAccessApiTest extends TestCase
 
         $this->assertDatabaseHas('access_requests', ['id' => $accessRequestId, 'status' => 'pending']);
         $this->assertDatabaseCount('user_role_assignments', 2);
+    }
+
+    public function test_privileged_access_cannot_be_approved_before_target_enrolls_mfa(): void
+    {
+        Notification::fake();
+        [$company, $maker, $target, $privilegedRole] = $this->accessScenario();
+        $approver = User::factory()->create();
+        $this->grant($maker, $company, 'identity.access.request');
+        $this->grant($approver, $company, 'identity.access.approve');
+        $accessRequestId = $this->withToken($this->tokenFor($maker))
+            ->postJson("/api/v1/identity/companies/{$company->id}/access-requests", [
+                'target_user_id' => $target->id,
+                'role_id' => $privilegedRole->id,
+                'reason' => 'MFA policy test',
+                'valid_until' => now()->addDays(10)->toIso8601String(),
+            ])->json('id');
+
+        $this->withToken($this->tokenFor($approver))
+            ->postJson(
+                "/api/v1/identity/companies/{$company->id}/access-requests/{$accessRequestId}/approve",
+            )
+            ->assertConflict()
+            ->assertJsonPath('code', 'ACCESS_TARGET_MFA_REQUIRED');
+
+        $this->assertDatabaseHas('access_requests', ['id' => $accessRequestId, 'status' => 'pending']);
+        $this->assertDatabaseMissing('user_role_assignments', ['access_request_id' => $accessRequestId]);
     }
 
     public function test_target_user_cannot_approve_access_for_themselves(): void

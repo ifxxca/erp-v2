@@ -61,6 +61,8 @@ erDiagram
     USERS ||--o{ ACCESS_REQUESTS : targets
     ROLES ||--o{ ACCESS_REQUESTS : requests
     ACCESS_REQUESTS o|--o| USER_ROLE_ASSIGNMENTS : authorizes
+    USERS ||--o{ USER_MFA_METHODS : secures
+    USERS ||--o{ USER_MFA_RECOVERY_CODES : recovers
     USERS ||--o{ AUDIT_LOGS : acts
 
     USERS {
@@ -163,6 +165,22 @@ erDiagram
         datetime requested_valid_until
         datetime decided_at
     }
+    USER_MFA_METHODS {
+        uuid id PK
+        uuid user_id FK
+        enum type
+        encrypted secret
+        enum status
+        bigint last_used_timestep
+        datetime confirmed_at
+        datetime disabled_at
+    }
+    USER_MFA_RECOVERY_CODES {
+        uuid id PK
+        uuid user_id FK
+        string code_hash
+        datetime used_at
+    }
     AUDIT_LOGS {
         uuid id PK
         uuid actor_user_id FK
@@ -185,6 +203,7 @@ Aturan penting:
 - Location membership selalu eksplisit dan tidak diwariskan dari department.
 - Role assignment selalu memiliki company scope; di dalamnya dapat dibatasi lagi berdasarkan departemen dan/atau lokasi.
 - Assignment privileged hanya dibuat dari access request approved, memiliki expiry maksimum 90 hari, dan requester/target/approver harus berbeda.
+- TOTP secret terenkripsi, kode tidak dapat dipakai ulang, dan recovery code hanya disimpan sebagai hash sekali pakai.
 - Permission menggunakan pola `module.resource.action`, misalnya `procurement.purchase-request.approve`.
 - Hak efektif dihitung dari assignment yang aktif dan scope request. Tidak ada pengecekan role menggunakan ID hardcoded.
 - Menonaktifkan user segera membatalkan session dan akses API, tanpa menghapus histori transaksinya.

@@ -157,6 +157,13 @@ class PrivilegedAccessService
                 $accessRequest->department_id,
                 $accessRequest->location_id,
             );
+            if (! $accessRequest->targetUser->mfaMethods()->where('status', 'active')->exists()) {
+                throw new AccessGovernanceException(
+                    'The target user must enroll MFA before privileged access can be approved.',
+                    'ACCESS_TARGET_MFA_REQUIRED',
+                    Response::HTTP_CONFLICT,
+                );
+            }
 
             $duplicate = $this->scopeQuery(
                 UserRoleAssignment::query()

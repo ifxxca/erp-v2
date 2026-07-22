@@ -3,6 +3,8 @@
 return [
     'invitation_lifetime_hours' => (int) env('IDENTITY_INVITATION_LIFETIME_HOURS', 72),
     'step_up_lifetime_minutes' => (int) env('IDENTITY_STEP_UP_LIFETIME_MINUTES', 15),
+    'totp_window' => (int) env('IDENTITY_TOTP_WINDOW', 1),
+    'recovery_code_count' => (int) env('IDENTITY_RECOVERY_CODE_COUNT', 8),
     'privileged_assignment_max_days' => (int) env('IDENTITY_PRIVILEGED_ASSIGNMENT_MAX_DAYS', 90),
 
     'token_lifetime_minutes' => [

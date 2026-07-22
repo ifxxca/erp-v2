@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use App\Modules\Identity\Application\AuditLogger;
+use App\Modules\Identity\Application\MfaRequirementResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly MfaRequirementResolver $mfaRequirement,
+    ) {}
 
     public function login(LoginRequest $request): JsonResponse
     {
@@ -65,6 +69,7 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'access_token' => $token->plainTextToken,
             'expires_at' => $expiresAt->toIso8601String(),
+            'mfa_required' => $this->mfaRequirement->required($user),
         ]);
     }
 

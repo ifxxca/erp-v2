@@ -21,6 +21,11 @@ API base URL: `http://localhost:8000/api/v1`.
 - `POST /auth/login` issues an expiring bearer token for `erp_web`, `ops_web`, or `mobile`.
 - `POST /auth/logout` revokes the presented bearer token.
 - `POST /auth/invitations/accept` activates a single-use invitation.
+- `GET /auth/mfa` returns MFA and current-token assurance status.
+- `POST /auth/mfa/totp/enroll|confirm` enrolls an authenticator app and returns recovery codes once.
+- `POST /auth/mfa/challenge` verifies TOTP or a single-use recovery code.
+- `POST /auth/mfa/recovery-codes/regenerate` replaces recovery codes after recent MFA.
+- `DELETE /auth/mfa/totp` disables optional MFA and revokes every token.
 - `GET /me` returns the active authenticated identity.
 - `POST /identity/users/invitations` requires `identity.user.manage` in `company_id`.
 - `POST /identity/users/{user}/companies/{company}/terminate` terminates scoped employment and revokes stale access.
@@ -29,7 +34,7 @@ API base URL: `http://localhost:8000/api/v1`.
 - `POST /identity/companies/{company}/access-requests/{request}/approve|reject` applies maker-checker policy.
 - `POST /identity/companies/{company}/role-assignments/{assignment}/revoke` immediately revokes access and target tokens.
 
-Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. The enforcement point is implemented, but the MFA enrollment/challenge endpoint is intentionally pending.
+Privileged mutations require an access token with `mfa_verified_at` no older than 15 minutes. Privileged assignments cannot be approved until the target user has active MFA.
 
 The canonical payload and response definitions are in `packages/api-contract/openapi.yaml`.
 

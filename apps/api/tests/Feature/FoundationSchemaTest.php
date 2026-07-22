@@ -33,6 +33,8 @@ class FoundationSchemaTest extends TestCase
             'user_invitations',
             'audit_logs',
             'personal_access_tokens',
+            'user_mfa_methods',
+            'user_mfa_recovery_codes',
         ];
 
         foreach ($expectedTables as $table) {

@@ -45,6 +45,16 @@ class User extends Authenticatable
         return $this->hasMany(UserInvitation::class);
     }
 
+    public function mfaMethods(): HasMany
+    {
+        return $this->hasMany(UserMfaMethod::class);
+    }
+
+    public function mfaRecoveryCodes(): HasMany
+    {
+        return $this->hasMany(UserMfaRecoveryCode::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
