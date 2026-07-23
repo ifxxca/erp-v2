@@ -53,7 +53,7 @@ erp-v2/
 
 ## Status
 
-P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web, Operations Web, shared packages, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, dan central notification inbox sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
+P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web, Operations Web, shared packages, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, serta observability/recovery control sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
 
 ## Quick verification
 

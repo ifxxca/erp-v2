@@ -62,6 +62,7 @@ class NotificationRequestedHandler implements OutboxHandler
                     [
                         'status' => $isInbox ? 'delivered' : 'pending',
                         'attempts' => $isInbox ? 1 : 0,
+                        'attempts_in_cycle' => $isInbox ? 1 : 0,
                         'available_at' => now(),
                         'delivered_at' => $isInbox ? now() : null,
                     ],

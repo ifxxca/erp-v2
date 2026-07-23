@@ -16,6 +16,7 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 10. [10-P0-DECISIONS.md](10-P0-DECISIONS.md) — baseline final seluruh keputusan architecture/model P0.
 11. [11-P1-IDENTITY-DECISIONS.md](11-P1-IDENTITY-DECISIONS.md) — governance akses, multi-scope membership, session/MFA, dan employment ownership.
 12. [12-FOUNDATION-STATUS.md](12-FOUNDATION-STATUS.md) — implementation evidence, verified checks, dan intentionally pending work.
+13. [13-OBSERVABILITY-RUNBOOK.md](13-OBSERVABILITY-RUNBOOK.md) — health, metrics, alert threshold, triage, dan audited dead-letter re-drive.
 
 ## Architecture Decision Records
 
@@ -35,18 +36,19 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 | [0012](adr/0012-private-file-lifecycle.md) | Private file lifecycle, quarantine, scan, dan authorized download |
 | [0013](adr/0013-atomic-document-numbering.md) | Atomic, scoped, versioned document numbering |
 | [0014](adr/0014-transactional-outbox-notifications.md) | Transactional outbox, central inbox, retry, dan dead-letter notification |
+| [0015](adr/0015-production-observability-controls.md) | Vendor-neutral health, metrics, structured logging, alert, dan recovery control |
 
 ## Status baseline
 
 | Area | Status | Next gate |
 |---|---|---|
 | Product scope | P0 accepted | Validasi flow detail bersama domain owner |
-| Architecture | Foundation implemented | Selesaikan observability dan deployment verification |
+| Architecture | Foundation implemented | Production collector integration dan deployment verification |
 | Logical ERD | Foundation physical schema | Review dan implementasi schema Fleet/Maintenance |
 | Identity/RBAC | Implemented and verified | Access certification/SoD reporting dan production environment verification |
 | Data import | Proposed | Profiling serta data contract pertama |
 | Delivery plan | Accepted baseline | Konfirmasi team capacity dan onboarding pilot |
-| Engineering standard | In implementation | Lengkapi shared platform controls dan observability |
+| Engineering standard | Foundation implemented | Validasi alert routing, retention, dan production SLO |
 
 ## Aturan perubahan
 

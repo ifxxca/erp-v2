@@ -144,6 +144,7 @@ Deployment staging menjalankan smoke test dan migration rehearsal. Production me
 - Distributed trace digunakan untuk API-worker/integration flow.
 - Alert harus actionable, memiliki owner, severity, serta runbook.
 - Audit log berbeda dari application log dan memiliki retention/access control sendiri.
+- Health, metric, alert threshold, serta recovery procedure mengikuti [13-OBSERVABILITY-RUNBOOK.md](13-OBSERVABILITY-RUNBOOK.md); perubahan status dead letter manual di database dilarang.
 
 ## Performance dan reliability targets
 

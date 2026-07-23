@@ -38,6 +38,10 @@ Status date: 2026-07-23
 - Mantine ERP notification center with unread badge, responsive drawer, message read state, and mark-all action against the shared API.
 - Privileged-access request, approval, rejection, and revocation notifications now originate inside their owning transaction through the outbox; mail provider failures cannot roll back access governance state.
 - Dedicated scheduler and queue worker deployment processes for outbox polling and notification delivery.
+- Distinct API liveness/readiness contracts with database, cache, queue-backend, and object-storage probes plus a Compose readiness healthcheck.
+- Protected low-cardinality Prometheus gauges for outbox/delivery backlog and age, queued/failed jobs, pending privileged access, and quarantined files.
+- Structured JSON stderr logging, correlated HTTP completion telemetry, and scheduled warning/critical threshold evaluation.
+- Audited single-record outbox and notification-delivery re-drive with mandatory operator/reason, retained attempt history, and independent retry-cycle budgets.
 - React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
@@ -53,7 +57,7 @@ Status date: 2026-07-23
 
 ## Verified locally
 
-- API test suite: 112 tests, 647 assertions.
+- API test suite: 118 tests, 685 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -65,6 +69,7 @@ Status date: 2026-07-23
 - File checksum/signature rejection, upload ownership, company isolation, quarantine/scan state, infected-object removal, authorized download, deletion tombstone, and audit evidence.
 - Document-number transaction guard, sequential allocation, subject replay, rollback reuse, monthly reset, location override/global fallback, company isolation, unsafe-pattern denial, and audit evidence.
 - Outbox transaction guard/rollback, canonical deduplication, request correlation, idempotent inbox projection, transient retry recovery, permanent failure dead-lettering, provider delivery retry exhaustion, and notification API ownership/read-state behavior.
+- Liveness/readiness separation and degraded readiness response; protected metrics authentication/cardinality; threshold evaluation; correlated request telemetry; and recoverable outbox/delivery dead-letter re-drive with audit/history preservation.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.
@@ -84,7 +89,7 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - OpenAPI generated clients.
-- Remaining shared-platform foundation: production observability.
+- Production collector/dashboard/alert routing, telemetry retention/access policy, and distributed tracing integration.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 

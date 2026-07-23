@@ -36,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
             && (config('files.scan_driver') !== 'clamav' || config('files.allow_unscanned'))) {
             throw new LogicException('Production requires ClamAV and forbids unscanned files.');
         }
+        if ($this->app->environment('production')
+            && (! is_string(config('observability.metrics_token'))
+                || strlen(config('observability.metrics_token')) < 32)) {
+            throw new LogicException('Production requires OBSERVABILITY_METRICS_TOKEN with at least 32 characters.');
+        }
 
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         Sanctum::authenticateAccessTokensUsing(function (PersonalAccessToken $token, bool $isValid): bool {

@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class DeliverPlatformNotification implements ShouldBeUnique, ShouldQueue
@@ -46,19 +47,33 @@ class DeliverPlatformNotification implements ShouldBeUnique, ShouldQueue
                     'updated_at' => now(),
                 ]);
             $attemptNo = $delivery->attempts + 1;
+            $attemptInCycle = $delivery->attempts_in_cycle + 1;
             NotificationDeliveryAttempt::query()->create([
                 'notification_delivery_id' => $delivery->id,
                 'attempt_no' => $attemptNo,
                 'status' => 'processing',
                 'started_at' => now(),
             ]);
-            $delivery->forceFill(['attempts' => $attemptNo, 'status' => 'processing'])->save();
+            $delivery->forceFill([
+                'attempts' => $attemptNo,
+                'attempts_in_cycle' => $attemptInCycle,
+                'status' => 'processing',
+            ])->save();
 
             return $delivery;
         });
         if ($delivery === null) {
             return;
         }
+        $delivery->loadMissing('notification.source');
+        $context = array_filter([
+            'request_id' => $delivery->notification->source->request_id,
+            'notification_delivery_id' => $delivery->id,
+            'notification_id' => $delivery->notification_id,
+            'channel' => $delivery->channel,
+            'attempt_no' => $delivery->attempts,
+        ]);
+        Log::debug('Delivering platform notification.', $context);
 
         try {
             $providerMessageId = $sender->send($delivery);
@@ -77,6 +92,9 @@ class DeliverPlatformNotification implements ShouldBeUnique, ShouldQueue
                     'last_error_message' => null,
                 ])->save();
             });
+            Log::info('Platform notification delivered.', $context + array_filter([
+                'provider_message_id' => $providerMessageId,
+            ]));
         } catch (Throwable $exception) {
             $this->recordFailure($exception);
         }
@@ -91,7 +109,8 @@ class DeliverPlatformNotification implements ShouldBeUnique, ShouldQueue
             }
 
             $permanent = $exception instanceof PermanentOutboxFailure;
-            $deadLetter = $permanent || $delivery->attempts >= (int) config('outbox.delivery_max_attempts');
+            $deadLetter = $permanent
+                || $delivery->attempts_in_cycle >= (int) config('outbox.delivery_max_attempts');
             $errorCode = $permanent ? $exception->errorCode : 'NOTIFICATION_DELIVERY_FAILED';
             $errorMessage = mb_substr($exception->getMessage(), 0, 2000);
             NotificationDeliveryAttempt::query()
@@ -115,6 +134,16 @@ class DeliverPlatformNotification implements ShouldBeUnique, ShouldQueue
                 'last_error_code' => $errorCode,
                 'last_error_message' => $errorMessage,
             ])->save();
+            $delivery->loadMissing('notification.source');
+            Log::warning('Platform notification delivery failed.', array_filter([
+                'request_id' => $delivery->notification->source->request_id,
+                'notification_delivery_id' => $delivery->id,
+                'notification_id' => $delivery->notification_id,
+                'channel' => $delivery->channel,
+                'attempt_no' => $delivery->attempts,
+                'error_code' => $errorCode,
+                'dead_letter' => $deadLetter,
+            ]));
         });
     }
 }

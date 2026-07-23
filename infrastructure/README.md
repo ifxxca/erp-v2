@@ -25,5 +25,9 @@ Services:
 - Redis: `localhost:6379`
 - MinIO API/Console: `localhost:9000` / `localhost:9001`
 - Mailpit SMTP/UI: `localhost:1025` / `localhost:8025`
+- API liveness/readiness: `localhost:8000/api/v1/health/live|ready`
+- Protected metrics: `localhost:8000/api/v1/internal/metrics`
 
 Credential pada `.env.example` hanya untuk local development dan tidak boleh digunakan pada environment bersama.
+
+API, worker, dan scheduler menulis JSON log ke stderr. `OBSERVABILITY_METRICS_TOKEN` pada contoh environment hanya untuk local development; shared/staging/production wajib mengambil token berbeda dari secret manager dan membatasi metrics endpoint pada private network. Runbook lengkap tersedia di [docs/13-OBSERVABILITY-RUNBOOK.md](../docs/13-OBSERVABILITY-RUNBOOK.md).

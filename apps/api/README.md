@@ -47,6 +47,16 @@ The Compose stack creates the private MinIO bucket, runs Redis queue worker and 
 
 Privileged-access lifecycle notifications are the first domain producer. The API, scheduler, and queue worker must all run in deployed environments. External mail remains at-least-once unless its provider supports an idempotency key.
 
+## Observability controls
+
+- `GET /health/live` is process-only liveness.
+- `GET /health/ready` checks database, cache, queue backend, and configured object storage.
+- `GET /internal/metrics` exports protected Prometheus gauges using `OBSERVABILITY_METRICS_TOKEN`.
+- `observability:check` evaluates configurable backlog/dead-letter/failed-job thresholds and runs every minute.
+- `outbox:redrive` and `notifications:redrive-delivery` recover exactly one dead-letter record with mandatory reason/operator audit while preserving attempt history.
+
+Container processes write JSON to stderr. See `docs/13-OBSERVABILITY-RUNBOOK.md` before operating re-drive commands.
+
 ## Identity endpoints
 
 - `POST /auth/login` issues an expiring bearer token; mobile login also starts one 30-day device-bound refresh family.
@@ -95,7 +105,7 @@ Token idle timeout is enforced before Sanctum updates `last_used_at`: ERP Web 30
 
 Mobile refresh tokens are stored server-side only as SHA-256 hashes, rotate on every use, and retain their consumed history for replay detection. Rotation does not extend the 30-day family expiry. Mobile clients must transmit them only over TLS and keep them in platform-protected secure storage, never ordinary preferences or logs.
 
-The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.13.0).
+The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.14.0).
 
 ## Verification
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.13.0
+  version: 0.14.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -16,6 +16,65 @@ servers:
   - url: http://localhost:8000/api/v1
     description: Local development
 paths:
+  /health/live:
+    get:
+      operationId: getLiveness
+      summary: Confirm that the API process can serve requests without probing dependencies.
+      responses:
+        "200":
+          description: Process is alive.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, checked_at]
+                properties:
+                  status:
+                    const: alive
+                  checked_at:
+                    type: string
+                    format: date-time
+        "429":
+          description: Probe rate limit exceeded.
+  /health/ready:
+    get:
+      operationId: getReadiness
+      summary: Probe database, cache, queue backend, and configured object storage.
+      responses:
+        "200":
+          description: Every required dependency is available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          description: At least one required dependency is unavailable; the response deliberately omits exception details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "429":
+          description: Probe rate limit exceeded.
+  /internal/metrics:
+    get:
+      operationId: getInternalMetrics
+      summary: Export low-cardinality operational gauges in Prometheus text format.
+      description: Uses a dedicated internal bearer token, not an employee access token. Network-level restriction is also required in shared environments.
+      security:
+        - metricsAuth: []
+      responses:
+        "200":
+          description: Prometheus exposition format version 0.0.4.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "503":
+          description: Metrics token is not configured.
+        "429":
+          description: Metrics scrape rate limit exceeded.
   /auth/login:
     post:
       operationId: login
@@ -1430,6 +1489,10 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+    metricsAuth:
+      type: http
+      scheme: bearer
+      description: Dedicated OBSERVABILITY_METRICS_TOKEN; employee tokens are not accepted.
   parameters:
     RequestId:
       name: X-Request-ID
@@ -2754,6 +2817,26 @@ components:
           additionalProperties:
             type: string
             enum: [pending, processing, delivered, dead_letter]
+    ReadinessResponse:
+      type: object
+      required: [status, checks, checked_at]
+      properties:
+        status:
+          enum: [ready, unavailable]
+        checks:
+          type: object
+          additionalProperties:
+            type: object
+            required: [status, latency_ms]
+            properties:
+              status:
+                enum: [up, down]
+              latency_ms:
+                type: number
+                minimum: 0
+        checked_at:
+          type: string
+          format: date-time
     NotificationResponse:
       type: object
       required: [data]

@@ -16,7 +16,11 @@ class RequestCorrelation
         $requestId = self::requestId($request);
         Log::withContext(['request_id' => $requestId]);
 
-        return self::decorate($next($request), $request);
+        try {
+            return self::decorate($next($request), $request);
+        } finally {
+            Log::withoutContext(['request_id']);
+        }
     }
 
     public static function requestId(Request $request): string
@@ -52,7 +56,8 @@ class RequestCorrelation
             $data = [];
         }
 
-        if ($response->getStatusCode() >= 500) {
+        $controlledOperationalResponse = request()->routeIs('health.ready', 'metrics');
+        if ($response->getStatusCode() >= 500 && ! $controlledOperationalResponse) {
             $data = [
                 'message' => 'An unexpected server error occurred.',
                 'code' => 'INTERNAL_ERROR',

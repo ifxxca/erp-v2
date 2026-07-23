@@ -52,6 +52,8 @@ class FoundationSchemaTest extends TestCase
             $this->assertTrue(Schema::hasTable($table), "Missing table: {$table}");
         }
         $this->assertTrue(Schema::hasColumn('roles', 'assignment_scope'));
+        $this->assertTrue(Schema::hasColumn('outbox_messages', 'attempts_in_cycle'));
+        $this->assertTrue(Schema::hasColumn('notification_deliveries', 'attempts_in_cycle'));
     }
 
     public function test_foundation_seeder_is_repeatable(): void

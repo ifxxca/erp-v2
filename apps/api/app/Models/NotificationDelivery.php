@@ -16,10 +16,13 @@ class NotificationDelivery extends Model
         'channel',
         'status',
         'attempts',
+        'attempts_in_cycle',
+        'redrive_count',
         'available_at',
         'claimed_at',
         'delivered_at',
         'dead_lettered_at',
+        'last_redriven_at',
         'provider_message_id',
         'last_error_code',
         'last_error_message',
@@ -29,10 +32,13 @@ class NotificationDelivery extends Model
     {
         return [
             'attempts' => 'integer',
+            'attempts_in_cycle' => 'integer',
+            'redrive_count' => 'integer',
             'available_at' => 'immutable_datetime',
             'claimed_at' => 'immutable_datetime',
             'delivered_at' => 'immutable_datetime',
             'dead_lettered_at' => 'immutable_datetime',
+            'last_redriven_at' => 'immutable_datetime',
         ];
     }
 

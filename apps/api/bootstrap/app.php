@@ -2,8 +2,10 @@
 
 use App\Http\Middleware\EnsureActiveIdentity;
 use App\Http\Middleware\EnsureIdempotentRequest;
+use App\Http\Middleware\EnsureMetricsToken;
 use App\Http\Middleware\EnsureMfaAuthenticated;
 use App\Http\Middleware\RequestCorrelation;
+use App\Http\Middleware\RequestTelemetry;
 use App\Http\Middleware\RequireGlobalPermission;
 use App\Http\Middleware\RequireRecentMfa;
 use App\Http\Middleware\RequireScopedPermission;
@@ -22,12 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [RequestCorrelation::class]);
+        $middleware->api(prepend: [RequestCorrelation::class, RequestTelemetry::class]);
         $middleware->alias([
             'identity.active' => EnsureActiveIdentity::class,
             'idempotent' => EnsureIdempotentRequest::class,
             'mfa.authenticated' => EnsureMfaAuthenticated::class,
             'mfa.recent' => RequireRecentMfa::class,
+            'metrics.auth' => EnsureMetricsToken::class,
             'permission.scoped' => RequireScopedPermission::class,
             'permission.global' => RequireGlobalPermission::class,
         ]);

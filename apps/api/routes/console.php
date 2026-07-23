@@ -48,3 +48,8 @@ if (app()->environment('testing')) {
     $outboxDispatch->everyTenSeconds();
 }
 $outboxDispatch->name('outbox:dispatch-pending')->withoutOverlapping();
+
+Schedule::command('observability:check')
+    ->everyMinute()
+    ->name('observability:check')
+    ->withoutOverlapping();

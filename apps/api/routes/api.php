@@ -3,9 +3,11 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
 use App\Http\Controllers\Api\V1\FileController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\IdentityCompanyController;
 use App\Http\Controllers\Api\V1\IdentityUserController;
 use App\Http\Controllers\Api\V1\InvitationController;
+use App\Http\Controllers\Api\V1\MetricsController;
 use App\Http\Controllers\Api\V1\MfaController;
 use App\Http\Controllers\Api\V1\MobileTokenController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -19,6 +21,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
+    Route::get('/health/live', [HealthController::class, 'live'])
+        ->middleware('throttle:120,1')
+        ->name('health.live');
+    Route::get('/health/ready', [HealthController::class, 'ready'])
+        ->middleware('throttle:120,1')
+        ->name('health.ready');
+    Route::get('/internal/metrics', MetricsController::class)
+        ->middleware(['metrics.auth', 'throttle:60,1'])
+        ->name('metrics');
+
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('/auth/password/forgot', [PasswordRecoveryController::class, 'request'])
         ->middleware('throttle:3,1');

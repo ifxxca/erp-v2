@@ -38,6 +38,7 @@ class ProcessOutboxMessage implements ShouldBeUnique, ShouldQueue
                 }
 
                 $attemptNo = $message->attempts + 1;
+                $attemptInCycle = $message->attempts_in_cycle + 1;
                 $attempt = OutboxAttempt::query()->create([
                     'outbox_message_id' => $message->id,
                     'attempt_no' => $attemptNo,
@@ -45,7 +46,11 @@ class ProcessOutboxMessage implements ShouldBeUnique, ShouldQueue
                     'worker_id' => gethostname() ?: null,
                     'started_at' => now(),
                 ]);
-                $message->forceFill(['attempts' => $attemptNo, 'status' => 'processing'])->save();
+                $message->forceFill([
+                    'attempts' => $attemptNo,
+                    'attempts_in_cycle' => $attemptInCycle,
+                    'status' => 'processing',
+                ])->save();
                 Log::debug('Processing outbox message.', array_filter([
                     'request_id' => $message->request_id,
                     'outbox_message_id' => $message->id,
@@ -62,6 +67,12 @@ class ProcessOutboxMessage implements ShouldBeUnique, ShouldQueue
                     'last_error_code' => null,
                     'last_error_message' => null,
                 ])->save();
+                Log::info('Outbox message processed.', array_filter([
+                    'request_id' => $message->request_id,
+                    'outbox_message_id' => $message->id,
+                    'event_type' => $message->event_type,
+                    'attempt_no' => $attemptNo,
+                ]));
             });
         } catch (Throwable $exception) {
             $this->recordFailure($exception);
@@ -77,8 +88,9 @@ class ProcessOutboxMessage implements ShouldBeUnique, ShouldQueue
             }
 
             $attemptNo = $message->attempts + 1;
+            $attemptInCycle = $message->attempts_in_cycle + 1;
             $permanent = $exception instanceof PermanentOutboxFailure;
-            $deadLetter = $permanent || $attemptNo >= (int) config('outbox.max_attempts');
+            $deadLetter = $permanent || $attemptInCycle >= (int) config('outbox.max_attempts');
             $errorCode = $permanent ? $exception->errorCode : 'OUTBOX_HANDLER_FAILED';
             $errorMessage = mb_substr($exception->getMessage(), 0, 2000);
             OutboxAttempt::query()->create([
@@ -94,6 +106,7 @@ class ProcessOutboxMessage implements ShouldBeUnique, ShouldQueue
             $backoff = config('outbox.backoff_seconds');
             $message->forceFill([
                 'attempts' => $attemptNo,
+                'attempts_in_cycle' => $attemptInCycle,
                 'status' => $deadLetter ? 'dead_letter' : 'pending',
                 'available_at' => now()->addSeconds((int) ($backoff[min($attemptNo - 1, count($backoff) - 1)] ?? 300)),
                 'claimed_at' => null,
