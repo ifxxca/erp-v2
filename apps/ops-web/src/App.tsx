@@ -9,7 +9,7 @@ import { notifications } from '@mantine/notifications'
 import { IconCar, IconClipboardCheck, IconDownload, IconLogout, IconPlus, IconRefresh, IconTool } from '@tabler/icons-react'
 import './App.css'
 import {
-  ApiError, apiRequest, type ChecklistTemplate, type FileAsset, type LoginResponse, type OperationsContext, type Page,
+  ApiError, apiRequest, type ChecklistTemplate, type EvidenceFile, type LoginResponse, type OperationsContext, type Page,
   type Vehicle, type VehicleTrip, type VehicleType, type WorkOrder,
   downloadEvidence, uploadChecklistEvidence,
 } from './api'
@@ -160,7 +160,7 @@ function MaintenancePanel({ orders, busy, canManage, onAdd, onTransition }: { or
 }
 
 type ModalProps<T> = { opened: boolean; onClose: () => void; onSubmit: (values: T) => Promise<void>; reportError: (cause: unknown) => void }
-function TripDetailModal({ opened, onClose, trip, onDownload }: { opened: boolean; onClose: () => void; trip: VehicleTrip | null; onDownload: (file: FileAsset) => Promise<void> }) {
+function TripDetailModal({ opened, onClose, trip, onDownload }: { opened: boolean; onClose: () => void; trip: VehicleTrip | null; onDownload: (file: EvidenceFile) => Promise<void> }) {
   return <Modal opened={opened} onClose={onClose} title="Detail trip & checklist" size="lg"><Stack><Group justify="space-between"><Box><Text fw={800}>{trip?.vehicle.plate_number}</Text><Text size="sm" c="dimmed">{trip?.driver.name} · {trip?.purpose}</Text></Box>{trip && <Badge color={statusColor[trip.status]}>{statusLabel[trip.status]}</Badge>}</Group><Divider />{trip?.checklist?.answers.map((answer) => <Card key={answer.id} withBorder p="sm"><Group justify="space-between" align="flex-start"><Box><Text fw={650}>{answer.item.label}</Text><Text size="xs" c={answer.item.is_critical ? 'red' : 'dimmed'}>{answer.item.is_critical ? 'Item kritis' : 'Item pemeriksaan'}</Text></Box><Badge color={answer.result === 'pass' ? 'green' : answer.result === 'fail' ? 'red' : 'gray'}>{answer.result === 'pass' ? 'Baik' : answer.result === 'fail' ? 'Bermasalah' : 'Tidak berlaku'}</Badge></Group>{answer.note && <Text size="sm" mt="xs">{answer.note}</Text>}{answer.evidence_files.map((file) => <Button key={file.id} mt="xs" size="xs" variant="light" leftSection={<IconDownload size={14} />} onClick={() => void onDownload(file)}>{file.original_name}</Button>)}</Card>)}{!trip?.checklist?.answers.length && <Text c="dimmed" ta="center">Checklist tidak tersedia.</Text>}</Stack></Modal>
 }
 function CheckoutModal({ opened, onClose, onSubmit, reportError, companyId, token, vehicles, checklist }: ModalProps<Record<string, unknown>> & { companyId: string; token: string; vehicles: Vehicle[]; checklist: ChecklistTemplate | null }) {

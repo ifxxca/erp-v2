@@ -1,4 +1,7 @@
+import type { components } from '@rajawali/api-contract'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'
+type Contract = components['schemas']
 
 export class ApiError extends Error {
   status: number
@@ -23,36 +26,9 @@ type ApiErrorPayload = {
   errors?: Record<string, string[]>
 }
 
-export type CurrentUser = {
-  id: string
-  name: string
-  email: string
-  status: string
-}
-
-export type PlatformNotification = {
-  id: string
-  company_id: string | null
-  kind: string
-  title: string
-  body: string
-  data: Record<string, unknown>
-  action_url: string | null
-  read_at: string | null
-  created_at: string
-  deliveries: Record<string, 'pending' | 'processing' | 'delivered' | 'dead_letter'>
-}
-
-export type NotificationPage = {
-  data: PlatformNotification[]
-  meta: {
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    unread_count: number
-  }
-}
+export type CurrentUser = Contract['CurrentUser']
+export type PlatformNotification = Contract['PlatformNotification']
+export type NotificationPage = Contract['NotificationPage']
 
 export type Company = {
   id: string
@@ -110,38 +86,10 @@ export type IdentityUser = {
   location_memberships: LocationMembership[]
 }
 
-export type LoginResponse = {
-  token_type: 'Bearer'
-  access_token: string
-  expires_at: string
-  mfa_required: boolean
-}
-
-export type MfaStatus = {
-  required: boolean
-  enabled: boolean
-  status: 'not_configured' | 'pending' | 'active' | 'disabled'
-  confirmed_at: string | null
-  unused_recovery_codes: number
-  current_token_verified_at: string | null
-}
-
-export type MfaEnrollment = {
-  secret: string
-  otpauth_url: string
-  status: 'pending'
-}
-
-export type DeviceSession = {
-  id: string
-  device_name: string
-  surface: string | null
-  created_at: string
-  last_used_at: string | null
-  expires_at: string | null
-  mfa_verified_at: string | null
-  current: boolean
-}
+export type LoginResponse = Contract['TokenResponse']
+export type MfaStatus = Contract['MfaStatus']
+export type MfaEnrollment = Contract['TotpEnrollment']
+export type DeviceSession = Contract['DeviceSession']
 
 export type RoleCatalogPermission = {
   id: string

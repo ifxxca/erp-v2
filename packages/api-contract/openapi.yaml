@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.17.0
+  version: 0.17.1
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -2005,8 +2005,26 @@ components:
           required: [id, code, name, timezone]
           properties: { id: { type: string }, code: { type: string }, name: { type: string }, timezone: { type: string } }
         capabilities:
-          type: object
-          additionalProperties: { type: boolean }
+          $ref: "#/components/schemas/OperationsCapabilities"
+    OperationsCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+        - can_view_vehicles
+        - can_manage_vehicles
+        - can_view_work_orders
+        - can_manage_work_orders
+        - can_view_trips
+        - can_operate_trips
+        - can_manage_trips
+      properties:
+        can_view_vehicles: { type: boolean }
+        can_manage_vehicles: { type: boolean }
+        can_view_work_orders: { type: boolean }
+        can_manage_work_orders: { type: boolean }
+        can_view_trips: { type: boolean }
+        can_operate_trips: { type: boolean }
+        can_manage_trips: { type: boolean }
     VehicleStatus:
       type: string
       enum: [available, in_use, maintenance, blocked, inactive]

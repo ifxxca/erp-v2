@@ -1,8 +1,22 @@
 {
   "name": "@rajawali/api-contract",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.17.1",
+  "type": "module",
+  "scripts": {
+    "generate": "openapi-typescript openapi.yaml -o src/generated.ts",
+    "check": "npm run generate && git diff --exit-code -- src/generated.ts",
+    "lint": "npm run check"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./openapi.yaml": "./openapi.yaml"
+  },
   "files": [
-    "openapi.yaml"
+    "openapi.yaml",
+    "src"
   ]
 }

@@ -48,6 +48,7 @@ Nama package detail mengikuti convention Laravel, React/Vite, dan Flutter, tetap
 - Mobile: Flutter 3.44 ketika mobile stage dimulai.
 - File: private S3-compatible object storage; file tidak disimpan di database atau public web root.
 - Shared frontend package hanya berisi design system, generated API client, serta utility non-bisnis.
+- OpenAPI adalah sumber schema lintas surface. Generated TypeScript schemas harus di-commit dan `npm run contract:check` wajib lulus di CI; tipe response tidak boleh disalin manual ketika schema contract tersedia.
 - Versi patch mengikuti security update; upgrade major membutuhkan ADR/compatibility plan jika berdampak pada contract atau deployment.
 
 ## Naming

@@ -59,6 +59,7 @@ Status date: 2026-07-23
 - Mantine Roles & Permissions workspace covering catalog search, system-role inspection, custom-role creation/profile editing, permission mapping, and guarded deletion.
 - Mantine identity Access tab covering standard-role catalog, scoped effective-dated assignment, history, and guarded revocation.
 - npm workspace plus shared API-contract and web-UI packages.
+- OpenAPI-generated TypeScript schemas shared by ERP and Operations Web, with committed output and CI drift detection.
 - PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, scheduler, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
 - CI jobs for PostgreSQL migration/seed validation, PHP tests/format/audit, and web build/lint.
@@ -90,6 +91,7 @@ Status date: 2026-07-23
 - Composer strict validation.
 - Composer dependency security audit.
 - Docker Compose configuration parsing.
+- OpenAPI TypeScript regeneration is deterministic, both web applications compile against shared schemas, and the npm dependency audit is clean.
 
 ## Container verification
 
@@ -97,9 +99,9 @@ Local Compose is verified with PostgreSQL 18, PHP 8.5 API, Redis, MinIO, ClamAV,
 
 ## Intentionally not implemented yet
 
-- OpenAPI generated clients.
+- Generated runtime request clients and Dart/Flutter contract output; shared TypeScript schemas and drift checking are implemented.
 - Production collector/dashboard/alert routing, telemetry retention/access policy, and distributed tracing integration.
 - Fleet documents, service due schedule, fuel/pickup events, route/geolocation, mandatory checklist-evidence policy, parts/inventory boundary, vendor billing, and maintenance approval workflow.
 - Flutter mobile application.
 
-The mobile token lifecycle is implemented, but production deployment still requires PostgreSQL/container verification and mobile OS secure-storage integration.
+The mobile token lifecycle is implemented, but production deployment still requires mobile OS secure-storage integration and end-to-end mobile client validation.

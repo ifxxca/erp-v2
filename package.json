@@ -11,11 +11,19 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "contract:generate": "npm run generate --workspace @rajawali/api-contract",
+    "contract:check": "npm run check --workspace @rajawali/api-contract",
     "dev:erp": "npm run dev --workspace @rajawali/erp-web",
     "dev:ops": "npm run dev --workspace @rajawali/ops-web"
   },
   "engines": {
     "node": ">=24 <27",
     "npm": ">=11"
+  },
+  "overrides": {
+    "js-yaml": "^4.3.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
   }
 }
