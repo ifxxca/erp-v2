@@ -55,7 +55,7 @@ erp-v2/
 
 ## Status
 
-P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web dan Operations Web dengan typed OpenAPI runtime, shared generated TypeScript contract, generated Dart/Dio client, Flutter Android/iOS login/MFA, access-derived Operations Context, dan Fleet read-only dashboard, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
+P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web dan Operations Web dengan typed OpenAPI runtime, shared generated TypeScript contract, generated Dart/Dio client, Flutter Android/iOS login/MFA, access-derived Operations Context, Fleet read-only dashboard, dan scoped trip/checklist detail, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
 
 ## Quick verification
 

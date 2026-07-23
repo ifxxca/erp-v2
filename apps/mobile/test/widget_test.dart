@@ -84,6 +84,35 @@ void main() {
     expect(harness.fleetRepository.loadedLocations.last, 'location-2');
   });
 
+  testWidgets('operator opens an active trip and reads checklist detail', (
+    tester,
+  ) async {
+    final harness = await AuthHarness.create(
+      storedCredentials: credentials(mfaRequired: false),
+    );
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+
+    final tripCard = find.byKey(const Key('trip-trip-location-1'));
+    await tester.ensureVisible(tripCard);
+    await tester.pumpAndSettle();
+    await tester.tap(tripCard);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('trip-detail-screen')), findsOneWidget);
+    await tester.drag(
+      find.byKey(const Key('trip-detail-screen')),
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Checklist sebelum berangkat'), findsOneWidget);
+    expect(find.text('Kondisi ban'), findsOneWidget);
+    expect(find.text('Lulus'), findsOneWidget);
+    expect(find.text('ban-depan.jpg'), findsOneWidget);
+    expect(find.textContaining('Scan bersih'), findsOneWidget);
+    expect(harness.fleetRepository.loadedTripIds, ['trip-location-1']);
+  });
+
   testWidgets('known login error is translated without exposing internals', (
     tester,
   ) async {
@@ -190,6 +219,7 @@ final class AuthHarness {
 
 final class WidgetFleetRepository implements FleetRepository {
   final loadedLocations = <String>[];
+  final loadedTripIds = <String>[];
 
   @override
   Future<FleetPage<FleetTrip>> loadActiveTrips(
@@ -220,6 +250,58 @@ final class WidgetFleetRepository implements FleetRepository {
   @override
   Future<FleetStatusCounts> loadStatusCounts(FleetScope scope) async {
     return const FleetStatusCounts(available: 1, inUse: 1, maintenance: 0);
+  }
+
+  @override
+  Future<FleetTripDetail> loadTripDetail(
+    FleetScope scope, {
+    required String tripId,
+  }) async {
+    loadedTripIds.add(tripId);
+    return FleetTripDetail(
+      id: tripId,
+      status: FleetTripStatus.active,
+      purpose: 'Delivery retail',
+      destination: 'Jakarta',
+      startOdometer: 12000,
+      endOdometer: null,
+      departedAt: DateTime.utc(2026, 7, 23, 8),
+      arrivedAt: null,
+      cancelledAt: null,
+      completionNote: null,
+      cancelReason: null,
+      vehicleCode: 'TRUCK-01',
+      vehiclePlateNumber: 'B 1234 RKS',
+      vehicleDescription: 'Isuzu Elf',
+      driverName: 'Driver Test',
+      driverEmail: 'driver@example.test',
+      checklist: FleetChecklistSubmission(
+        id: 'submission-1',
+        templateName: 'Checklist sebelum berangkat',
+        templateVersion: 1,
+        submittedAt: DateTime.utc(2026, 7, 23, 8),
+        answers: const [
+          FleetChecklistAnswer(
+            id: 'answer-1',
+            lineNumber: 1,
+            label: 'Kondisi ban',
+            isRequired: true,
+            isCritical: true,
+            result: FleetChecklistResult.pass,
+            note: null,
+            evidence: [
+              FleetChecklistEvidence(
+                id: 'evidence-1',
+                originalName: 'ban-depan.jpg',
+                mimeType: 'image/jpeg',
+                size: 2048,
+                scanStatus: FleetEvidenceScanStatus.clean,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override

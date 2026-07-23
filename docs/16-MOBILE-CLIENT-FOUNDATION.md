@@ -18,6 +18,7 @@ Dokumen ini menetapkan fondasi contract untuk aplikasi Flutter. Aplikasi mobile 
 - Operator dapat mengganti area kerja yang authorized, melihat capability Fleet/Trip/Maintenance, melakukan pull-to-refresh, serta retry menggunakan correlated request reference. Response `401` menghapus secure session dan kembali ke login.
 - Refresh response tidak meminta challenge ulang ketika token family sudah memiliki MFA assurance; rotated access token tetap mewarisi assurance family yang sama.
 - Read-only Fleet slice memuat exact total/available/in-use/maintenance counts, active trips sesuai driver/manager boundary server, dan vehicle pages melalui generated `page`/`per_page` parameters. Response site lama ditolak setelah operator mengganti workspace.
+- Active trip dapat dibuka sebagai scoped detail yang memuat lifecycle dan odometer, snapshot template checklist historis, ordered answers, note, critical/required markers, serta safe evidence metadata. Response detail lama dan response setelah screen disposal ditolak oleh revision guard.
 
 Generated package adalah transport/model layer, bukan aplikasi dan bukan tempat business policy.
 

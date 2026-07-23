@@ -5,6 +5,7 @@ import 'package:rajawali_mobile/features/auth/mobile_auth_controller.dart';
 import 'package:rajawali_mobile/features/fleet/fleet_controller.dart';
 import 'package:rajawali_mobile/features/fleet/fleet_models.dart';
 import 'package:rajawali_mobile/features/fleet/fleet_repository.dart';
+import 'package:rajawali_mobile/features/fleet/trip_detail_screen.dart';
 import 'package:rajawali_mobile/features/operations/operations_context.dart';
 import 'package:rajawali_mobile/features/operations/operations_context_controller.dart';
 import 'package:rajawali_mobile/features/operations/operations_context_repository.dart';
@@ -114,6 +115,7 @@ final class _AuthenticatedShellState extends State<AuthenticatedShell> {
       workspace: _contextController.activeWorkspace!,
       fleetController: _fleetController,
       environment: widget.environment,
+      onOpenTrip: _openTrip,
       onRefresh: _refreshAll,
       onSelectWorkspace: _showWorkspaceSelector,
       hasMultipleWorkspaces: _contextController.workspaces.length > 1,
@@ -135,6 +137,21 @@ final class _AuthenticatedShellState extends State<AuthenticatedShell> {
     if (active != null && _fleetController.stage != FleetStage.loading) {
       await _fleetController.load(active);
     }
+  }
+
+  Future<void> _openTrip(FleetTrip trip) async {
+    final workspace = _contextController.activeWorkspace;
+    if (workspace == null) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => TripDetailScreen(
+          scope: FleetScope.fromWorkspace(workspace),
+          tripId: trip.id,
+          repository: widget.fleetRepository,
+          onSessionExpired: widget.authController.handleSessionExpired,
+        ),
+      ),
+    );
   }
 
   Future<void> _showWorkspaceSelector() async {
@@ -291,6 +308,7 @@ final class _WorkspaceOverview extends StatelessWidget {
     required this.workspace,
     required this.fleetController,
     required this.environment,
+    required this.onOpenTrip,
     required this.onRefresh,
     required this.onSelectWorkspace,
     required this.hasMultipleWorkspaces,
@@ -300,6 +318,7 @@ final class _WorkspaceOverview extends StatelessWidget {
   final OperationsWorkspace workspace;
   final FleetController fleetController;
   final String environment;
+  final Future<void> Function(FleetTrip trip) onOpenTrip;
   final Future<void> Function() onRefresh;
   final Future<void> Function() onSelectWorkspace;
   final bool hasMultipleWorkspaces;
@@ -340,7 +359,7 @@ final class _WorkspaceOverview extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 28),
-          _FleetDashboard(controller: fleetController),
+          _FleetDashboard(controller: fleetController, onOpenTrip: onOpenTrip),
           const SizedBox(height: 28),
           Text(
             'Hak akses pada area ini',
@@ -394,9 +413,10 @@ final class _WorkspaceOverview extends StatelessWidget {
 }
 
 final class _FleetDashboard extends StatelessWidget {
-  const _FleetDashboard({required this.controller});
+  const _FleetDashboard({required this.controller, required this.onOpenTrip});
 
   final FleetController controller;
+  final Future<void> Function(FleetTrip trip) onOpenTrip;
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +440,10 @@ final class _FleetDashboard extends StatelessWidget {
           ),
         ),
         FleetStage.failure => _FleetFailure(controller: controller),
-        FleetStage.ready => _FleetContent(controller: controller),
+        FleetStage.ready => _FleetContent(
+          controller: controller,
+          onOpenTrip: onOpenTrip,
+        ),
       },
     );
   }
@@ -473,9 +496,10 @@ final class _FleetFailure extends StatelessWidget {
 }
 
 final class _FleetContent extends StatelessWidget {
-  const _FleetContent({required this.controller});
+  const _FleetContent({required this.controller, required this.onOpenTrip});
 
   final FleetController controller;
+  final Future<void> Function(FleetTrip trip) onOpenTrip;
 
   @override
   Widget build(BuildContext context) {
@@ -548,7 +572,7 @@ final class _FleetContent extends StatelessWidget {
             const _FleetEmpty(message: 'Tidak ada trip aktif pada area ini.')
           else
             for (final trip in controller.activeTrips.data) ...[
-              _TripCard(trip: trip),
+              _TripCard(trip: trip, onTap: () => onOpenTrip(trip)),
               const SizedBox(height: 10),
             ],
           if (controller.activeTrips.hasMore)
@@ -676,44 +700,51 @@ final class _FleetEmpty extends StatelessWidget {
 }
 
 final class _TripCard extends StatelessWidget {
-  const _TripCard({required this.trip});
+  const _TripCard({required this.trip, required this.onTap});
 
   final FleetTrip trip;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       key: Key('trip-${trip.id}'),
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    trip.vehiclePlateNumber,
-                    style: Theme.of(context).textTheme.titleMedium,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      trip.vehiclePlateNumber,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
+                  const _StatusPill(label: 'Aktif', color: Colors.blue),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(trip.purpose),
+              if (trip.destination case final destination?)
+                Text(
+                  'Tujuan: $destination',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                const _StatusPill(label: 'Aktif', color: Colors.blue),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(trip.purpose),
-            if (trip.destination case final destination?)
+              const SizedBox(height: 8),
               Text(
-                'Tujuan: $destination',
+                '${trip.driverName} · berangkat ${_formatDateTime(trip.departedAt)}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-            const SizedBox(height: 8),
-            Text(
-              '${trip.driverName} · berangkat ${_formatDateTime(trip.departedAt)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

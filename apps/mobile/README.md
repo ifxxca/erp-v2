@@ -14,6 +14,8 @@ Foundation yang sudah tersedia:
   area kerja serta capability projection;
 - read-only Fleet dashboard dengan exact vehicle status totals, active trips,
   paginated vehicle list, dan stale-site response protection;
+- scoped trip detail dengan lifecycle/odometer, immutable checklist snapshot,
+  answer result, note, serta safe evidence metadata;
 - proactive dan 401-triggered single-flight refresh;
 - bearer injection, stable request ID saat retry, dan explicit idempotency context;
 - local-session removal ketika refresh replay ditolak atau logout dilakukan;

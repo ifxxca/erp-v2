@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rajawali_mobile/features/fleet/fleet_controller.dart';
 import 'package:rajawali_mobile/features/fleet/fleet_models.dart';
 import 'package:rajawali_mobile/features/fleet/fleet_repository.dart';
+import 'package:rajawali_mobile/features/fleet/trip_detail_controller.dart';
 import 'package:rajawali_mobile/features/operations/operations_context.dart';
 
 void main() {
@@ -92,6 +93,55 @@ void main() {
 
     expect(expired, isTrue);
   });
+
+  test('loads scoped trip detail with its checklist snapshot', () async {
+    final repository = FakeFleetRepository();
+    final controller = TripDetailController(
+      repository,
+      onSessionExpired: () async {},
+    );
+
+    await controller.load(FleetScope.fromWorkspace(workspace()), 'trip-1');
+
+    expect(controller.stage, TripDetailStage.ready);
+    expect(controller.trip?.id, 'trip-1');
+    expect(controller.trip?.checklist?.answers.single.label, 'Kondisi ban');
+    expect(repository.detailTripIds, ['trip-1']);
+  });
+
+  test('late trip detail response is discarded', () async {
+    final repository = FakeFleetRepository();
+    final delayed = Completer<FleetTripDetail>();
+    repository.firstDetailResult = delayed.future;
+    final controller = TripDetailController(
+      repository,
+      onSessionExpired: () async {},
+    );
+    final scope = FleetScope.fromWorkspace(workspace());
+
+    final first = controller.load(scope, 'trip-old');
+    final second = controller.load(scope, 'trip-new');
+    delayed.complete(tripDetail('trip-old'));
+    await Future.wait([first, second]);
+
+    expect(controller.trip?.id, 'trip-new');
+  });
+
+  test('unauthorized trip detail expires the application session', () async {
+    final repository = FakeFleetRepository()..unauthorized = true;
+    var expired = false;
+    final controller = TripDetailController(
+      repository,
+      onSessionExpired: () async => expired = true,
+    );
+
+    await controller.load(
+      FleetScope.fromWorkspace(workspace()),
+      'trip-unauthorized',
+    );
+
+    expect(expired, isTrue);
+  });
 }
 
 final class FakeFleetRepository implements FleetRepository {
@@ -100,6 +150,8 @@ final class FakeFleetRepository implements FleetRepository {
   var statusCountCalls = 0;
   var unauthorized = false;
   Future<FleetPage<FleetVehicle>>? firstVehicleResult;
+  Future<FleetTripDetail>? firstDetailResult;
+  final detailTripIds = <String>[];
 
   @override
   Future<FleetPage<FleetTrip>> loadActiveTrips(
@@ -121,6 +173,18 @@ final class FakeFleetRepository implements FleetRepository {
     statusCountCalls += 1;
     _throwIfUnauthorized();
     return const FleetStatusCounts(available: 10, inUse: 5, maintenance: 2);
+  }
+
+  @override
+  Future<FleetTripDetail> loadTripDetail(
+    FleetScope scope, {
+    required String tripId,
+  }) async {
+    detailTripIds.add(tripId);
+    _throwIfUnauthorized();
+    final delayed = firstDetailResult;
+    if (delayed != null && tripId == 'trip-old') return delayed;
+    return tripDetail(tripId);
   }
 
   @override
@@ -184,6 +248,43 @@ FleetTrip trip(String id) => FleetTrip(
   vehiclePlateNumber: 'B 1234 RKS',
   driverId: 'user-1',
   driverName: 'Driver Test',
+);
+
+FleetTripDetail tripDetail(String id) => FleetTripDetail(
+  id: id,
+  status: FleetTripStatus.active,
+  purpose: 'Delivery retail',
+  destination: 'Jakarta',
+  startOdometer: 12000,
+  endOdometer: null,
+  departedAt: DateTime.utc(2026, 7, 23, 8),
+  arrivedAt: null,
+  cancelledAt: null,
+  completionNote: null,
+  cancelReason: null,
+  vehicleCode: 'TRUCK-01',
+  vehiclePlateNumber: 'B 1234 RKS',
+  vehicleDescription: 'Isuzu Elf',
+  driverName: 'Driver Test',
+  driverEmail: 'driver@example.test',
+  checklist: FleetChecklistSubmission(
+    id: 'submission-1',
+    templateName: 'Pre-departure',
+    templateVersion: 1,
+    submittedAt: DateTime.utc(2026, 7, 23, 8),
+    answers: const [
+      FleetChecklistAnswer(
+        id: 'answer-1',
+        lineNumber: 1,
+        label: 'Kondisi ban',
+        isRequired: true,
+        isCritical: true,
+        result: FleetChecklistResult.pass,
+        note: null,
+        evidence: [],
+      ),
+    ],
+  ),
 );
 
 OperationsWorkspace workspace({

@@ -11,6 +11,10 @@ enum FleetVehicleStatus {
 
 enum FleetTripStatus { active, completed, cancelled, unknown }
 
+enum FleetChecklistResult { pass, fail, notApplicable, unknown }
+
+enum FleetEvidenceScanStatus { clean, skipped, unknown }
+
 final class FleetVehicle {
   const FleetVehicle({
     required this.id,
@@ -59,6 +63,100 @@ final class FleetTrip {
   final String vehiclePlateNumber;
   final String driverId;
   final String driverName;
+}
+
+final class FleetChecklistEvidence {
+  const FleetChecklistEvidence({
+    required this.id,
+    required this.originalName,
+    required this.mimeType,
+    required this.size,
+    required this.scanStatus,
+  });
+
+  final String id;
+  final String originalName;
+  final String? mimeType;
+  final int? size;
+  final FleetEvidenceScanStatus scanStatus;
+}
+
+final class FleetChecklistAnswer {
+  const FleetChecklistAnswer({
+    required this.id,
+    required this.lineNumber,
+    required this.label,
+    required this.isRequired,
+    required this.isCritical,
+    required this.result,
+    required this.note,
+    required this.evidence,
+  });
+
+  final String id;
+  final int lineNumber;
+  final String label;
+  final bool isRequired;
+  final bool isCritical;
+  final FleetChecklistResult result;
+  final String? note;
+  final List<FleetChecklistEvidence> evidence;
+}
+
+final class FleetChecklistSubmission {
+  const FleetChecklistSubmission({
+    required this.id,
+    required this.templateName,
+    required this.templateVersion,
+    required this.submittedAt,
+    required this.answers,
+  });
+
+  final String id;
+  final String templateName;
+  final int templateVersion;
+  final DateTime submittedAt;
+  final List<FleetChecklistAnswer> answers;
+}
+
+final class FleetTripDetail {
+  const FleetTripDetail({
+    required this.id,
+    required this.status,
+    required this.purpose,
+    required this.destination,
+    required this.startOdometer,
+    required this.endOdometer,
+    required this.departedAt,
+    required this.arrivedAt,
+    required this.cancelledAt,
+    required this.completionNote,
+    required this.cancelReason,
+    required this.vehicleCode,
+    required this.vehiclePlateNumber,
+    required this.vehicleDescription,
+    required this.driverName,
+    required this.driverEmail,
+    required this.checklist,
+  });
+
+  final String id;
+  final FleetTripStatus status;
+  final String purpose;
+  final String? destination;
+  final int startOdometer;
+  final int? endOdometer;
+  final DateTime departedAt;
+  final DateTime? arrivedAt;
+  final DateTime? cancelledAt;
+  final String? completionNote;
+  final String? cancelReason;
+  final String vehicleCode;
+  final String vehiclePlateNumber;
+  final String vehicleDescription;
+  final String driverName;
+  final String? driverEmail;
+  final FleetChecklistSubmission? checklist;
 }
 
 final class FleetPage<T> {

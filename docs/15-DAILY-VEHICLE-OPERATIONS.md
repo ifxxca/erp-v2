@@ -80,7 +80,7 @@ Attachment file ke checklist answer, pembuatan trip, dan perubahan status kendar
 
 ## Mobile readiness
 
-Payload tidak bergantung pada HTML atau session browser. Generated Dart/Dio client `rajawali_api_client` sudah menyediakan login mobile, refresh token, operations context, Fleet/trip, dan private-file endpoints dari OpenAPI yang sama. Langkah mobile berikutnya adalah adapter secure storage, single-flight refresh, local draft checklist, upload evidence, dan idempotent retry queue. Offline checkout final belum boleh dilakukan sebelum policy konflik waktu, odometer, dan vehicle availability ditetapkan; draft offline boleh disiapkan, tetapi server tetap menjadi authority saat submit.
+Payload tidak bergantung pada HTML atau session browser. Generated Dart/Dio client `rajawali_api_client` sudah menyediakan login mobile, refresh token, operations context, Fleet/trip, dan private-file endpoints dari OpenAPI yang sama. Mobile sekarang sudah memiliki secure storage, single-flight refresh, Fleet dashboard, serta scoped trip detail yang menampilkan snapshot checklist dan safe evidence metadata. Langkah berikutnya adalah checkout/check-in UI, local draft checklist, upload evidence, dan idempotent retry queue. Offline checkout final belum boleh dilakukan sebelum policy konflik waktu, odometer, dan vehicle availability ditetapkan; draft offline boleh disiapkan, tetapi server tetap menjadi authority saat submit.
 
 ## Acceptance evidence
 
