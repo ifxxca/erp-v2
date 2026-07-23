@@ -9,6 +9,31 @@ final class GeneratedMobileAuthGateway implements MobileAuthGateway {
   final DefaultApi _api;
 
   @override
+  Future<void> challengeMfa({
+    required String accessToken,
+    required String credential,
+  }) async {
+    try {
+      final response = await _api.challengeMfa(
+        mfaChallenge: MfaChallenge(
+          (builder) => builder.credential = credential,
+        ),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+      if (response.data == null) {
+        throw const AuthenticationProtocolException(
+          'MFA challenge body is missing.',
+        );
+      }
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 401) {
+        throw const AuthenticationRejected();
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<MobileCredentials> login({
     required String email,
     required String password,

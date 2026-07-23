@@ -12,6 +12,8 @@ Dokumen ini menetapkan fondasi contract untuk aplikasi Flutter. Aplikasi mobile 
 - OpenAPI Generator `7.22.0`, Dart SDK `3.12.2`, dan build dependency lockfile dipin serta dijalankan melalui Docker.
 - Generated source dan output build-runner di-commit. CI meregenerasi package, menjalankan dependency resolution/build/static analysis, lalu menolak drift atau file generated baru yang belum di-commit.
 - `apps/mobile` menyediakan Flutter 3.44 Android/iOS shell, environment guard, secure credential blob, generated authentication gateway, single-flight token rotation, request correlation, serta explicit mutation context.
+- Flow aplikasi memilih login, MFA challenge, atau authenticated shell dari secure-session state; MFA sukses memperbarui credential blob secara atomic, sedangkan challenge dengan sesi ditolak menghapus seluruh credential lokal.
+- Login dan MFA memiliki validasi input, busy-state, safe localized error mapping, device-session label per platform, dan widget test untuk lifecycle login sampai logout.
 
 Generated package adalah transport/model layer, bukan aplikasi dan bukan tempat business policy.
 
@@ -44,9 +46,9 @@ npm run contract:check:dart
 
 Kedua command memerlukan Docker daemon. File di `packages/api-client-dart` tidak diedit manual. Ubah OpenAPI atau generator config, lalu regenerate seluruh package.
 
-## Next implementation gate
+## Next production gate
 
-Flutter domain UI dan offline capability boleh dilanjutkan setelah minimum berikut disetujui:
+Fleet domain UI dapat dikembangkan tanpa menganggap aplikasi siap didistribusikan. Distribusi production dan offline capability memerlukan minimum berikut disetujui:
 
 1. production hostname, certificate policy, signing identity, dan application ID final;
 2. biometric requirement untuk membuka credential atau tindakan tertentu;

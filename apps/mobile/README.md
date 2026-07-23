@@ -8,9 +8,12 @@ Foundation yang sudah tersedia:
 - compile-time environment dan API base URL validation;
 - satu encrypted credential blob melalui OS secure storage;
 - mobile login/rotating refresh gateway dari generated client;
+- responsive login, MFA TOTP/recovery-code, restored-session, dan authenticated
+  application shell;
 - proactive dan 401-triggered single-flight refresh;
 - bearer injection, stable request ID saat retry, dan explicit idempotency context;
 - local-session removal ketika refresh replay ditolak atau logout dilakukan;
+- translated safe authentication errors tanpa mengekspos detail internal;
 - Android API 24 minimum dan iOS Keychain entitlement.
 
 ## Development

@@ -136,6 +136,41 @@ final class MobileSessionManager implements AccessTokenProvider {
     }
   }
 
+  Future<void> verifyMfa(String credential) async {
+    final generation = _generation;
+    final token = await accessToken();
+    if (token == null || generation != _generation) {
+      throw const AuthenticationRejected();
+    }
+
+    try {
+      await _authGateway.challengeMfa(
+        accessToken: token,
+        credential: credential.trim(),
+      );
+    } on AuthenticationRejected {
+      if (generation == _generation) await clear();
+      rethrow;
+    }
+
+    if (generation != _generation) {
+      throw const AuthenticationOperationSuperseded();
+    }
+    final credentials = _credentials;
+    if (credentials == null) throw const AuthenticationRejected();
+    final verified = credentials.copyWith(mfaRequired: false);
+    await _withCredentialStore(() async {
+      if (generation != _generation) {
+        throw const AuthenticationOperationSuperseded();
+      }
+      await _credentialStore.write(verified);
+    });
+    if (generation != _generation) {
+      throw const AuthenticationOperationSuperseded();
+    }
+    _credentials = verified;
+  }
+
   Future<void> signOut() async {
     final credentials =
         _credentials ?? await _withCredentialStore(_credentialStore.read);

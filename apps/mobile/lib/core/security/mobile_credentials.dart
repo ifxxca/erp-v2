@@ -47,6 +47,16 @@ final class MobileCredentials {
     return refreshExpiresAt.isAfter(now.toUtc());
   }
 
+  MobileCredentials copyWith({bool? mfaRequired}) {
+    return MobileCredentials(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      accessExpiresAt: accessExpiresAt,
+      refreshExpiresAt: refreshExpiresAt,
+      mfaRequired: mfaRequired ?? this.mfaRequired,
+    );
+  }
+
   Map<String, Object?> toJson() => {
     'access_token': accessToken,
     'refresh_token': refreshToken,

@@ -125,6 +125,35 @@ void main() {
     expect(store.value, isNull);
     expect(manager.hasSession, isFalse);
   });
+
+  test('MFA verification updates the secure credential atomically', () async {
+    final store = MemoryCredentialStore(credentials(mfaRequired: true));
+    final gateway = FakeAuthGateway();
+    final manager = MobileSessionManager(store, gateway, clock: () => now);
+    await manager.restore();
+
+    await manager.verifyMfa(' 123456 ');
+
+    expect(gateway.challengeAccessToken, 'access-old');
+    expect(gateway.challengeCredential, '123456');
+    expect(manager.mfaRequired, isFalse);
+    expect(store.value?.mfaRequired, isFalse);
+  });
+
+  test('rejected MFA session clears all local credentials', () async {
+    final store = MemoryCredentialStore(credentials(mfaRequired: true));
+    final gateway = FakeAuthGateway()..rejectChallenge = true;
+    final manager = MobileSessionManager(store, gateway, clock: () => now);
+    await manager.restore();
+
+    await expectLater(
+      manager.verifyMfa('123456'),
+      throwsA(isA<AuthenticationRejected>()),
+    );
+
+    expect(manager.hasSession, isFalse);
+    expect(store.value, isNull);
+  });
 }
 
 final class MemoryCredentialStore implements CredentialStore {
@@ -152,7 +181,20 @@ final class FakeAuthGateway implements MobileAuthGateway {
   Future<MobileCredentials>? refreshResult;
   Object? logoutError;
   var rejectRefresh = false;
+  var rejectChallenge = false;
   var refreshCalls = 0;
+  String? challengeAccessToken;
+  String? challengeCredential;
+
+  @override
+  Future<void> challengeMfa({
+    required String accessToken,
+    required String credential,
+  }) async {
+    challengeAccessToken = accessToken;
+    challengeCredential = credential;
+    if (rejectChallenge) throw const AuthenticationRejected();
+  }
 
   @override
   Future<MobileCredentials> login({
@@ -181,12 +223,13 @@ MobileCredentials credentials({
   String accessToken = 'access-old',
   String refreshToken = 'refresh-old',
   DateTime? accessExpiresAt,
+  bool mfaRequired = false,
 }) {
   return MobileCredentials(
     accessToken: accessToken,
     refreshToken: refreshToken,
     accessExpiresAt: accessExpiresAt ?? DateTime.utc(2026, 7, 23, 10),
     refreshExpiresAt: DateTime.utc(2026, 8, 22, 9),
-    mfaRequired: false,
+    mfaRequired: mfaRequired,
   );
 }
