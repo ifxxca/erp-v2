@@ -39,6 +39,8 @@ Ganti command terakhir dengan `flutter analyze`, `flutter test`, atau
 `flutter build apk --debug` sesuai kebutuhan.
 
 Default local API adalah `http://10.0.2.2:8080/api/v1` untuk Android emulator.
+Login demo mobile menggunakan
+`mobile.driver@demo.rajawali.test` setelah `DemoSeeder` dijalankan.
 Environment lain wajib menggunakan HTTPS:
 
 ```text

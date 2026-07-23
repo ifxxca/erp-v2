@@ -12,6 +12,8 @@ services:
       APP_URL: http://localhost:8000
       LOG_CHANNEL: stderr
       OBSERVABILITY_METRICS_TOKEN: ${OBSERVABILITY_METRICS_TOKEN:-local-observability-token-change-me}
+      DEMO_SEED_PASSWORD: ${DEMO_SEED_PASSWORD:-RajawaliDemo!2026}
+      DEMO_SEED_TOTP_SECRET: ${DEMO_SEED_TOTP_SECRET:-JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432

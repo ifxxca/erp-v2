@@ -27,6 +27,7 @@ Status date: 2026-07-23
 - Explicit user-location memberships and department/location membership checks in effective permission resolution.
 - ULID identity schema for companies, departments, locations, memberships, roles, permissions, access requests, and role assignments.
 - Seed data for two legal entities, eight departments per company, initial system roles, and initial permission catalog.
+- Explicit local/testing-only, repeatable demo seed with ERP administrator MFA, Operations Fleet/Maintenance manager, mobile driver, and representative Fleet/trip/checklist/work-order data.
 - Company-aware permission resolver with active employment and assignment checks.
 - API-wide request correlation with normalized `X-Request-ID`, structured error envelopes, audit propagation, and safe 5xx masking.
 - Database-backed, identity-scoped mutation idempotency with canonical request fingerprints, atomic acquisition, exact response replay, in-progress/mismatch conflicts, failure recovery, retention cleanup, and hashed client keys.
@@ -69,9 +70,11 @@ Status date: 2026-07-23
 
 ## Verified locally
 
-- API test suite: 126 tests, 776 assertions.
+- API test suite: 130 tests, 822 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
+- Demo seeder repeatability plus gateway smoke login for ERP with TOTP, Operations Fleet/Maintenance, and mobile driver with refresh token and active trip.
+- Docker HTTP runtime inheritance of Compose PostgreSQL configuration and isolation of the login throttle bucket from health polling.
 - Cross-company permission isolation and disabled-user deny behavior.
 - Generic credential failures, invitation replay denial, scoped invitation authorization, and termination revocation behavior.
 - Privileged self-approval denial, MFA gate, maximum expiry, duplicate request, rejection, wrong-company denial, and immediate token revocation.
@@ -88,7 +91,7 @@ Status date: 2026-07-23
 - Identity directory scope/cross-company isolation, HR organization scheduling, invalid-scope and schedule-conflict denial, global-status boundaries, reactivation eligibility, and session revocation.
 - ERP and Operations production builds.
 - Web lint.
-- PostgreSQL 18 clean migration + FoundationSeeder and the full API suite (126 tests, 776 assertions) on PHP 8.5.
+- PostgreSQL 18 clean migration + FoundationSeeder and the full API suite (130 tests, 822 assertions) on PHP 8.5.
 - Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including invitation, TOTP enrollment, recovery-code presentation, mandatory MFA re-entry, session revocation, privileged request/approval/revocation, standard scoped assignment/revocation/self-action guard, system-role inspection, and the full custom-role create/edit/permission-sync/delete lifecycle.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
 - Composer strict validation.

@@ -73,6 +73,11 @@ docker compose --env-file infrastructure/.env.example -f infrastructure/compose.
 
 PHP 8.5 dan PostgreSQL 18 dijalankan melalui container/CI. Runtime PHP lokal yang lebih lama hanya dapat dipakai untuk fast test jika dependency masih kompatibel.
 
+Untuk pengujian manual ERP, Operations Web, dan mobile, jalankan local-only
+`DemoSeeder` serta gunakan persona yang didokumentasikan di
+[API local demo data](apps/api/README.md#local-demo-data). Demo seed terpisah
+dari system seed dan tidak dijalankan otomatis pada production.
+
 ## Aturan kontribusi
 
 - Perubahan scope harus memperbarui PRD.

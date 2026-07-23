@@ -85,7 +85,7 @@ Payload tidak bergantung pada HTML atau session browser. Generated Dart/Dio clie
 ## Acceptance evidence
 
 - SQLite feature tests mencakup lifecycle sukses, required/critical checklist, odometer regression, active driver conflict, cancellation, audit, dan pelepasan active keys.
-- PostgreSQL 18 menjalankan clean migration + seeder dan seluruh API suite: 126 test, 774 assertion, PHP 8.5.
+- PostgreSQL 18 menjalankan clean migration + seeder dan seluruh API suite: 130 test, 822 assertion, PHP 8.5.
 - Operations Web Mantine mempunyai tab operasional harian, upload evidence yang menunggu hasil scan, checklist checkout, check-in, dan manager cancellation.
 - Operations Web memanggil seluruh lifecycle melalui generated OpenAPI paths; compile-time typing mencakup path/query/body/response dan MFA memakai field `credential` yang sama dengan API.
 - OpenAPI `0.17.3` mendeskripsikan enam endpoint, schema trip/checklist, evidence attachment, capability context, serta `page`/`per_page` pagination yang eksplisit untuk generated clients.

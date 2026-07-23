@@ -82,6 +82,20 @@ class RequestControlApiTest extends TestCase
         $validation->assertHeader('X-Request-ID', $validation->json('request_id'));
     }
 
+    public function test_health_polling_does_not_consume_the_login_rate_limit(): void
+    {
+        foreach (range(1, 5) as $attempt) {
+            $this->getJson('/api/v1/health/live')->assertOk();
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'missing@example.test',
+            'password' => 'not-the-password',
+            'surface' => 'erp_web',
+            'device_name' => 'Rate limit isolation test',
+        ])->assertUnauthorized()->assertJsonPath('code', 'INVALID_CREDENTIALS');
+    }
+
     public function test_completed_request_is_replayed_without_reexecuting_side_effects(): void
     {
         [$token] = $this->actor();

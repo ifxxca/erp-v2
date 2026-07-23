@@ -16,6 +16,39 @@ docker compose --env-file infrastructure/.env.example -f infrastructure/compose.
 
 API base URL: `http://localhost:8000/api/v1`.
 
+## Local demo data
+
+System seed dan demo seed sengaja dipisahkan. Setelah migration tersedia,
+jalankan demo seed secara eksplisit dari repository root:
+
+```powershell
+docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml exec api php artisan db:seed --class=Database\Seeders\DemoSeeder
+```
+
+Seeder ini hanya boleh berjalan pada environment `local` atau `testing` dan
+repeatable. Menjalankannya kembali mereset session serta state skenario milik
+persona demo, tanpa membuat duplikat.
+
+| Surface | Email | Role |
+| --- | --- | --- |
+| ERP | `erp.admin@demo.rajawali.test` | `platform-admin` global |
+| Operations Web | `ops.manager@demo.rajawali.test` | `fleet-manager` + `maintenance-officer` di RKS/KRESEK |
+| Mobile | `mobile.driver@demo.rajawali.test` | `ops-driver` di RKS/KRESEK |
+
+Password default ketiganya adalah `RajawaliDemo!2026` dan dapat dioverride
+melalui `DEMO_SEED_PASSWORD`. Akun ERP memakai TOTP dengan secret local default
+`JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`. Tambahkan secret tersebut ke authenticator,
+atau tampilkan OTP saat ini dari container local:
+
+```powershell
+docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml exec api php artisan tinker --execute="echo app(PragmaRX\Google2FA\Google2FA::class)->getCurrentOtp(config('demo.totp_secret')).PHP_EOL;"
+```
+
+Demo data mencakup tiga kendaraan (available, in-use, maintenance), trip aktif
+driver dengan checklist, trip selesai, serta work order yang sedang berjalan.
+Jangan menjalankan `migrate:fresh` pada database yang perlu dipertahankan karena
+command tersebut menghapus seluruh data.
+
 ## Request controls
 
 Every API response includes `X-Request-ID`. Clients may send an 8–128 character URL-safe value; invalid or missing values are replaced by a server-generated ULID. Error JSON always contains `message`, stable `code`, and the same `request_id`; validation errors additionally contain `errors`.
