@@ -60,7 +60,7 @@ Status date: 2026-07-23
 - Mantine identity Access tab covering standard-role catalog, scoped effective-dated assignment, history, and guarded revocation.
 - npm workspace plus shared API-contract and web-UI packages.
 - OpenAPI-generated TypeScript schemas shared by ERP and Operations Web, with committed output and CI drift detection.
-- Operations Web typed runtime client for auth, Fleet, trips, checklist, maintenance, and file metadata/download operations, with centralized bearer, idempotency, and correlated-error handling.
+- ERP and Operations Web typed runtime clients for auth, identity governance, notifications, security/session management, Fleet, trips, checklist, maintenance, and file operations, with centralized bearer, idempotency, and correlated-error handling.
 - PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, scheduler, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
 - CI jobs for PostgreSQL migration/seed validation, PHP tests/format/audit, and web build/lint.
@@ -93,7 +93,7 @@ Status date: 2026-07-23
 - Composer dependency security audit.
 - Docker Compose configuration parsing.
 - OpenAPI TypeScript regeneration is deterministic, both web applications compile against shared schemas, and the npm dependency audit is clean.
-- Operations runtime-client tests verify the MFA credential contract, bearer/idempotency headers, typed pagination serialization, and correlated API error mapping.
+- ERP and Operations runtime-client tests verify MFA contracts, bearer/idempotency headers, typed path/query/body serialization, session identifier normalization, and correlated API error mapping.
 
 ## Container verification
 
@@ -101,7 +101,7 @@ Local Compose is verified with PostgreSQL 18, PHP 8.5 API, Redis, MinIO, ClamAV,
 
 ## Intentionally not implemented yet
 
-- ERP typed runtime request migration and Dart/Flutter contract output; shared TypeScript schemas, Operations runtime typing, and drift checking are implemented.
+- Dart/Flutter contract output; shared TypeScript schemas, both web runtime clients, and drift checking are implemented.
 - Production collector/dashboard/alert routing, telemetry retention/access policy, and distributed tracing integration.
 - Fleet documents, service due schedule, fuel/pickup events, route/geolocation, mandatory checklist-evidence policy, parts/inventory boundary, vendor billing, and maintenance approval workflow.
 - Flutter mobile application.

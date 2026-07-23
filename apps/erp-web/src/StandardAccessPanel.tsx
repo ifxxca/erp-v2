@@ -18,7 +18,9 @@ import {
 } from '@mantine/core'
 import { IconCalendarClock, IconKey, IconPlus, IconShieldCheck, IconTrash } from '@tabler/icons-react'
 import {
-  apiRequest,
+  createStandardRoleAssignment,
+  listStandardRoleAssignments,
+  revokeStandardRoleAssignment,
   type Company,
   type IdentityUser,
   type Organization,
@@ -60,7 +62,7 @@ export default function StandardAccessPanel({ user, currentUserId, organization,
   const refresh = useCallback(async () => {
     setBusy(true)
     try {
-      setCatalog(await apiRequest<StandardAccessCatalog>(`/identity/companies/${company.id}/users/${user.id}/role-assignments`, {}, token))
+      setCatalog(await listStandardRoleAssignments(company.id, user.id, token))
     } catch (cause) {
       onError(cause)
     } finally {
@@ -126,8 +128,13 @@ function AssignRoleModal({ user, roles, organization, company, token, onClose, o
     event.preventDefault()
     setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/users/${user.id}/role-assignments`, {
-        method: 'POST', body: JSON.stringify({ role_id: roleId, department_id: departmentId, location_id: locationId, valid_from: validFrom, valid_until: validUntil || null, reason }),
+      await createStandardRoleAssignment(company.id, user.id, {
+        role_id: roleId,
+        department_id: departmentId,
+        location_id: locationId,
+        valid_from: validFrom,
+        valid_until: validUntil || null,
+        reason,
       }, token)
       await onCompleted()
     } catch (cause) {
@@ -147,7 +154,7 @@ function RevokeAssignmentModal({ assignment, user, company, token, onClose, onEr
   async function revoke() {
     setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/users/${user.id}/role-assignments/${assignment.id}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }, token)
+      await revokeStandardRoleAssignment(company.id, user.id, assignment.id, reason, token)
       await onCompleted()
     } catch (cause) {
       onError(cause)

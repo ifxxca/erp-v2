@@ -19,7 +19,14 @@ import {
   Title,
 } from '@mantine/core'
 import { IconBuilding, IconCalendarEvent, IconKey, IconShieldExclamation, IconUser } from '@tabler/icons-react'
-import { apiRequest, type Company, type IdentityUser, type Organization } from './api'
+import {
+  changeIdentityStatus,
+  updateOrganizationMemberships,
+  type Company,
+  type IdentityUser,
+  type MutableIdentityStatus,
+  type Organization,
+} from './api'
 import { currentDepartments } from './identity'
 import StandardAccessPanel from './StandardAccessPanel'
 
@@ -61,7 +68,7 @@ export default function IdentityDrawer({ user, organization, company, token, cur
   const [locationIds, setLocationIds] = useState(() => activeLocations.map((item) => item.location.id))
   const [effectiveFrom, setEffectiveFrom] = useState(tomorrow())
   const [reason, setReason] = useState('')
-  const [nextStatus, setNextStatus] = useState(user.status === 'active' ? 'suspended' : user.status === 'invited' ? 'disabled' : 'active')
+  const [nextStatus, setNextStatus] = useState<MutableIdentityStatus>(user.status === 'active' ? 'suspended' : user.status === 'invited' ? 'disabled' : 'active')
   const [statusReason, setStatusReason] = useState('')
   const [statusConfirmed, setStatusConfirmed] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -73,8 +80,12 @@ export default function IdentityDrawer({ user, organization, company, token, cur
     event.preventDefault()
     setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/users/${user.id}/organization-memberships`, {
-        method: 'PUT', body: JSON.stringify({ department_ids: departmentIds, primary_department_id: primaryDepartmentId, location_ids: locationIds, effective_from: effectiveFrom, reason }),
+      await updateOrganizationMemberships(company.id, user.id, {
+        department_ids: departmentIds,
+        primary_department_id: primaryDepartmentId,
+        location_ids: locationIds,
+        effective_from: effectiveFrom,
+        reason,
       }, token)
       await onChanged(`Perubahan organisasi ${user.name} dijadwalkan untuk ${formatDate(effectiveFrom)}.`)
     } catch (cause) {
@@ -88,9 +99,7 @@ export default function IdentityDrawer({ user, organization, company, token, cur
     event.preventDefault()
     setBusy(true)
     try {
-      await apiRequest(`/identity/users/${user.id}/status`, {
-        method: 'PATCH', body: JSON.stringify({ status: nextStatus, reason: statusReason }),
-      }, token)
+      await changeIdentityStatus(user.id, { status: nextStatus, reason: statusReason }, token)
       await onChanged(`Status identity ${user.name} diubah menjadi ${nextStatus}.`)
     } catch (cause) {
       onError(cause)

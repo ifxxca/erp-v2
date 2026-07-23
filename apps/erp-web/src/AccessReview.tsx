@@ -33,14 +33,20 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import {
-  apiRequest,
+  createAccessRequest,
+  decideAccessRequest,
+  getPrivilegedAccessCatalog,
+  listAccessRequests,
+  listMyAccessRequests,
+  listPrivilegedRoleAssignments,
+  revokePrivilegedRoleAssignment,
   type AccessCatalogUser,
   type AccessRequest,
+  type AccessRequestStatus,
   type AccessRole,
   type Company,
   type CurrentUser,
   type Organization,
-  type Page,
   type RoleAssignment,
 } from './api'
 
@@ -86,7 +92,7 @@ export default function AccessReview({ token, currentUser, company, organization
   const [assignmentPage, setAssignmentPage] = useState(1)
   const [assignmentLastPage, setAssignmentLastPage] = useState(1)
   const [assignmentTotal, setAssignmentTotal] = useState(0)
-  const [queueStatus, setQueueStatus] = useState<string | null>('pending')
+  const [queueStatus, setQueueStatus] = useState<AccessRequestStatus | null>('pending')
   const [showRequestForm, setShowRequestForm] = useState(false)
   const [decision, setDecision] = useState<{ request: AccessRequest; action: 'approve' | 'reject' } | null>(null)
   const [revocation, setRevocation] = useState<RoleAssignment | null>(null)
@@ -97,23 +103,21 @@ export default function AccessReview({ token, currentUser, company, organization
     try {
       const requests: Array<Promise<void>> = []
       if (capabilities.can_request_access) {
-        requests.push(apiRequest<{ data: { users: AccessCatalogUser[]; roles: AccessRole[] } }>(`/identity/companies/${company.id}/access-catalog`, {}, token).then((response) => {
+        requests.push(getPrivilegedAccessCatalog(company.id, token).then((response) => {
           setCatalogUsers(response.data.users)
           setRoles(response.data.roles)
         }))
-        requests.push(apiRequest<Page<AccessRequest>>(`/identity/companies/${company.id}/access-requests/mine?page=${minePage}`, {}, token).then((response) => {
+        requests.push(listMyAccessRequests(company.id, minePage, token).then((response) => {
           setMine(response.data); setMineLastPage(response.last_page); setMineTotal(response.total)
         }))
       }
       if (capabilities.can_approve_access) {
-        const params = new URLSearchParams({ page: String(queuePage) })
-        if (queueStatus) params.set('status', queueStatus)
-        requests.push(apiRequest<Page<AccessRequest>>(`/identity/companies/${company.id}/access-requests?${params}`, {}, token).then((response) => {
+        requests.push(listAccessRequests(company.id, queueStatus ?? undefined, queuePage, token).then((response) => {
           setQueue(response.data); setQueueLastPage(response.last_page); setQueueTotal(response.total)
         }))
       }
       if (capabilities.can_revoke_access) {
-        requests.push(apiRequest<Page<RoleAssignment>>(`/identity/companies/${company.id}/role-assignments?page=${assignmentPage}`, {}, token).then((response) => {
+        requests.push(listPrivilegedRoleAssignments(company.id, assignmentPage, token).then((response) => {
           setAssignments(response.data); setAssignmentLastPage(response.last_page); setAssignmentTotal(response.total)
         }))
       }
@@ -164,7 +168,7 @@ export default function AccessReview({ token, currentUser, company, organization
       </Group>
 
       {section === 'queue' && <>
-        <Group justify="flex-end" p="md" bg="gray.0"><Select label="Status" w={180} clearable value={queueStatus} onChange={(value) => { setQueuePage(1); setQueueStatus(value) }} data={['pending', 'approved', 'rejected', 'cancelled']} /></Group>
+        <Group justify="flex-end" p="md" bg="gray.0"><Select label="Status" w={180} clearable value={queueStatus} onChange={(value) => { setQueuePage(1); setQueueStatus(value as AccessRequestStatus | null) }} data={['pending', 'approved', 'rejected', 'cancelled']} /></Group>
         <RequestList requests={queue} currentUser={currentUser} canDecide onDecision={(request, action) => setDecision({ request, action })} />
         <Pager page={queuePage} lastPage={queueLastPage} onPage={setQueuePage} />
       </>}
@@ -228,9 +232,11 @@ function RequestDrawer({ opened, token, company, organization, users, roles, onC
   const scopeReady = selectedRole?.assignment_scope === 'department' ? Boolean(departmentId) : selectedRole?.assignment_scope === 'location' ? Boolean(locationId) : true
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); setBusy(true)
+    event.preventDefault()
+    if (!targetId || !roleId) return
+    setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/access-requests`, { method: 'POST', body: JSON.stringify({ target_user_id: targetId, role_id: roleId, department_id: departmentId, location_id: locationId, reason, valid_until: new Date(validUntil).toISOString() }) }, token)
+      await createAccessRequest(company.id, { target_user_id: targetId, role_id: roleId, department_id: departmentId, location_id: locationId, reason, valid_until: new Date(validUntil).toISOString() }, token)
       await onCompleted()
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
@@ -259,7 +265,7 @@ function DecisionDialog({ token, company, decision, onClose, onError, onComplete
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/access-requests/${decision.request.id}/${decision.action}`, { method: 'POST', body: JSON.stringify({ note }) }, token)
+      await decideAccessRequest(company.id, decision.request.id, decision.action, note, token)
       await onCompleted()
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
@@ -273,7 +279,7 @@ function RevocationDialog({ token, company, assignment, onClose, onError, onComp
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true)
     try {
-      await apiRequest(`/identity/companies/${company.id}/role-assignments/${assignment.id}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }, token)
+      await revokePrivilegedRoleAssignment(company.id, assignment.id, reason, token)
       await onCompleted()
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }

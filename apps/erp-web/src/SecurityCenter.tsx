@@ -31,7 +31,20 @@ import {
   IconShieldCheck,
   IconTrash,
 } from '@tabler/icons-react'
-import { apiRequest, type DeviceSession, type MfaEnrollment, type MfaStatus } from './api'
+import {
+  challengeMfa,
+  confirmTotp,
+  disableTotp,
+  enrollTotp,
+  getMfaStatus,
+  listDeviceSessions,
+  regenerateMfaRecoveryCodes,
+  revokeAllDeviceSessions,
+  revokeDeviceSession,
+  type DeviceSession,
+  type MfaEnrollment,
+  type MfaStatus,
+} from './api'
 
 type Props = {
   token: string
@@ -64,11 +77,11 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
     setBusy(true)
     try {
       const [mfaResponse, sessionResponse] = await Promise.all([
-        apiRequest<MfaStatus>('/auth/mfa', {}, token),
-        apiRequest<{ data: DeviceSession[] }>('/auth/sessions', {}, token),
+        getMfaStatus(token),
+        listDeviceSessions(token),
       ])
       setMfa(mfaResponse)
-      setSessions(sessionResponse.data)
+      setSessions(sessionResponse)
     } catch (cause) {
       onError(cause)
     } finally {
@@ -83,10 +96,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
   async function startEnrollment() {
     setBusy(true)
     try {
-      const response = await apiRequest<MfaEnrollment>('/auth/mfa/totp/enroll', {
-        method: 'POST', body: JSON.stringify({ password: enrollPassword }),
-      }, token)
-      setEnrollment(response)
+      setEnrollment(await enrollTotp(enrollPassword, token))
       setEnrollPassword('')
     } catch (cause) {
       onError(cause)
@@ -98,10 +108,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
   async function confirmEnrollment() {
     setBusy(true)
     try {
-      const response = await apiRequest<{ status: 'active'; recovery_codes: string[] }>('/auth/mfa/totp/confirm', {
-        method: 'POST', body: JSON.stringify({ code: confirmCode }),
-      }, token)
-      setRecoveryCodes(response.recovery_codes)
+      setRecoveryCodes(await confirmTotp(confirmCode, token))
       setEnrollOpened(false)
       setEnrollment(null)
       setConfirmCode('')
@@ -117,9 +124,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
   async function verifyStepUp() {
     setBusy(true)
     try {
-      await apiRequest('/auth/mfa/challenge', {
-        method: 'POST', body: JSON.stringify({ credential: stepUpCredential }),
-      }, token)
+      await challengeMfa(token, stepUpCredential)
       setStepUpCredential('')
       await refresh()
       notifications.show({ color: 'green', title: 'Verifikasi berhasil', message: 'Aksi sensitif terbuka selama 15 menit.' })
@@ -133,8 +138,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
   async function regenerateCodes() {
     setBusy(true)
     try {
-      const response = await apiRequest<{ recovery_codes: string[] }>('/auth/mfa/recovery-codes/regenerate', { method: 'POST' }, token)
-      setRecoveryCodes(response.recovery_codes)
+      setRecoveryCodes(await regenerateMfaRecoveryCodes(token))
       await refresh()
     } catch (cause) {
       onError(cause)
@@ -146,9 +150,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
   async function disableMfa() {
     setBusy(true)
     try {
-      await apiRequest('/auth/mfa/totp', {
-        method: 'DELETE', body: JSON.stringify({ password: disablePassword }),
-      }, token)
+      await disableTotp(disablePassword, token)
       setDisableOpened(false)
       setDisablePassword('')
       notifications.show({ color: 'orange', title: 'MFA dinonaktifkan', message: 'Semua session telah dicabut. Silakan masuk kembali.' })
@@ -164,7 +166,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
     if (!revokeSession) return
     setBusy(true)
     try {
-      const response = await apiRequest<{ status: 'revoked'; current: boolean }>(`/auth/sessions/${revokeSession.id}`, { method: 'DELETE' }, token)
+      const response = await revokeDeviceSession(revokeSession.id, token)
       setRevokeSession(null)
       if (response.current) {
         onSessionEnded()
@@ -182,9 +184,7 @@ export default function SecurityCenter({ token, onError, onSessionEnded }: Props
   async function revokeAll() {
     setBusy(true)
     try {
-      await apiRequest('/auth/sessions/revoke-all', {
-        method: 'POST', body: JSON.stringify({ password: revokeAllPassword, keep_current: keepCurrent }),
-      }, token)
+      await revokeAllDeviceSessions(revokeAllPassword, keepCurrent, token)
       setRevokeAllOpened(false)
       setRevokeAllPassword('')
       if (!keepCurrent) {

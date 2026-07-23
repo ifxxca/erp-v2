@@ -54,7 +54,7 @@ erp-v2/
 
 ## Status
 
-P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web, Operations Web dengan typed OpenAPI runtime, shared generated TypeScript contract, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
+P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web dan Operations Web dengan typed OpenAPI runtime, shared generated TypeScript contract, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
 
 ## Quick verification
 

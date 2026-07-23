@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconBell, IconChecks } from '@tabler/icons-react'
-import { apiRequest, type NotificationPage, type PlatformNotification } from './api'
+import { listNotifications, markAllNotificationsRead, markNotificationRead, type PlatformNotification } from './api'
 
 type Props = {
   token: string
@@ -36,7 +36,7 @@ export default function NotificationCenter({ token, onError }: Props) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await apiRequest<NotificationPage>('/notifications?per_page=20', {}, token)
+      const response = await listNotifications(token)
       setItems(response.data)
       setUnreadCount(response.meta.unread_count)
     } catch (cause) {
@@ -53,12 +53,8 @@ export default function NotificationCenter({ token, onError }: Props) {
   async function markRead(notification: PlatformNotification) {
     if (notification.read_at) return
     try {
-      const response = await apiRequest<{ data: PlatformNotification }>(
-        `/notifications/${notification.id}/read`,
-        { method: 'PATCH', headers: { 'Idempotency-Key': crypto.randomUUID() } },
-        token,
-      )
-      setItems((current) => current.map((item) => item.id === notification.id ? response.data : item))
+      const response = await markNotificationRead(notification.id, token)
+      setItems((current) => current.map((item) => item.id === notification.id ? response : item))
       setUnreadCount((current) => Math.max(0, current - 1))
     } catch (cause) {
       onError(cause)
@@ -67,11 +63,7 @@ export default function NotificationCenter({ token, onError }: Props) {
 
   async function markAllRead() {
     try {
-      await apiRequest<{ updated: number }>(
-        '/notifications/read-all',
-        { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() } },
-        token,
-      )
+      await markAllNotificationsRead(token)
       const readAt = new Date().toISOString()
       setItems((current) => current.map((item) => item.read_at ? item : { ...item, read_at: readAt }))
       setUnreadCount(0)

@@ -11,7 +11,7 @@ import {
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { IconMailPlus } from '@tabler/icons-react'
-import { apiRequest, type Company, type Organization } from './api'
+import { createUserInvitation, type Company, type Organization } from './api'
 
 type Props = {
   opened: boolean
@@ -60,15 +60,12 @@ export default function InvitationModal({ opened, token, company, organization, 
   async function submit(values: typeof form.values) {
     setBusy(true)
     try {
-      await apiRequest('/identity/users/invitations', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...values,
-          name: values.name.trim(),
-          email: values.email.trim(),
-          employee_no: values.employee_no.trim() || null,
-          company_id: company.id,
-        }),
+      await createUserInvitation({
+        ...values,
+        name: values.name.trim(),
+        email: values.email.trim(),
+        employee_no: values.employee_no.trim() || null,
+        company_id: company.id,
       }, token)
       close()
       await onCompleted(`Undangan untuk ${values.name.trim()} berhasil dibuat dan dikirim.`)

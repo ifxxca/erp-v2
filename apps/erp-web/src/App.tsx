@@ -45,11 +45,18 @@ import './App.css'
 import { currentDepartments } from './identity'
 import {
   ApiError,
-  apiRequest,
+  challengeMfa,
+  getCurrentUser,
+  getIdentityOrganization,
+  getIdentityUser,
+  listIdentityCompanies,
+  listIdentityUsers,
+  loginErp,
+  logoutErp,
   type Company,
   type CurrentUser,
   type IdentityUser,
-  type LoginResponse,
+  type IdentityStatus,
   type Organization,
 } from './api'
 
@@ -62,22 +69,6 @@ const InvitationModal = lazy(() => import('./InvitationModal'))
 const NotificationCenter = lazy(() => import('./NotificationCenter'))
 const RoleManagement = lazy(() => import('./RoleManagement'))
 const SecurityCenter = lazy(() => import('./SecurityCenter'))
-
-type CompanyResponse = {
-  data: Company[]
-  meta: {
-    can_manage_identity_status: boolean
-    can_view_roles: boolean
-    can_manage_roles: boolean
-  }
-}
-
-type UserPage = {
-  data: IdentityUser[]
-  current_page: number
-  last_page: number
-  total: number
-}
 
 const workspaceCopy: Record<Workspace, { eyebrow: string; title: string; description: string }> = {
   identity: { eyebrow: 'Identity administration', title: 'Employee directory', description: 'Lifecycle employee, employment, dan organisasi dalam satu sumber kebenaran.' },
@@ -147,11 +138,11 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!token || stage === 'mfa') return
+    if (!token || stage !== 'loading') return
     let active = true
     Promise.all([
-      apiRequest<CurrentUser>('/me', {}, token),
-      apiRequest<CompanyResponse>('/identity/companies', {}, token),
+      getCurrentUser(token),
+      listIdentityCompanies(token),
     ]).then(([user, companyResponse]) => {
       if (!active) return
       setCurrentUser(user)
@@ -169,18 +160,19 @@ function App() {
     if (!token || !companyId) return
     setBusy(true)
     try {
-      const params = new URLSearchParams({ page: String(requestedPage) })
-      if (appliedSearch) params.set('search', appliedSearch)
-      if (appliedStatus) params.set('status', appliedStatus)
       const [userPage, organizationResponse] = await Promise.all([
-        apiRequest<UserPage>(`/identity/companies/${companyId}/users?${params}`, {}, token),
-        apiRequest<{ data: Organization }>(`/identity/companies/${companyId}/organization`, {}, token),
+        listIdentityUsers(companyId, {
+          page: requestedPage,
+          search: appliedSearch || undefined,
+          status: (appliedStatus || undefined) as IdentityStatus | undefined,
+        }, token),
+        getIdentityOrganization(companyId, token),
       ])
       setUsers(userPage.data)
       setTotalUsers(userPage.total)
       setPage(userPage.current_page)
-      setLastPage(userPage.last_page)
-      setOrganization(organizationResponse.data)
+      setLastPage(userPage.last_page ?? 1)
+      setOrganization(organizationResponse)
       setSelectedUser(null)
     } catch (cause) {
       handleError(cause)
@@ -196,8 +188,7 @@ function App() {
   async function selectUser(userId: string) {
     setBusy(true)
     try {
-      const response = await apiRequest<{ data: IdentityUser }>(`/identity/companies/${companyId}/users/${userId}`, {}, token)
-      setSelectedUser(response.data)
+      setSelectedUser(await getIdentityUser(companyId, userId, token))
     } catch (cause) {
       handleError(cause)
     } finally {
@@ -207,7 +198,7 @@ function App() {
 
   async function logout() {
     try {
-      await apiRequest('/auth/logout', { method: 'POST' }, token)
+      await logoutErp(token)
     } finally {
       resetSession()
     }
@@ -362,9 +353,7 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: (token: string, nee
     setBusy(true)
     setError('')
     try {
-      const response = await apiRequest<LoginResponse>('/auth/login', {
-        method: 'POST', body: JSON.stringify({ email, password, surface: 'erp_web', device_name: navigator.userAgent.slice(0, 120) }),
-      })
+      const response = await loginErp(email, password)
       onAuthenticated(response.access_token, response.mfa_required)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Login gagal.')
@@ -388,7 +377,7 @@ function MfaScreen({ token, onVerified, onCancel }: { token: string; onVerified:
     setBusy(true)
     setError('')
     try {
-      await apiRequest('/auth/mfa/challenge', { method: 'POST', body: JSON.stringify({ credential }) }, token)
+      await challengeMfa(token, credential)
       onVerified()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Kode tidak valid.')

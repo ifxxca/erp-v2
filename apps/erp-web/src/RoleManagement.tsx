@@ -34,7 +34,18 @@ import {
   IconTrash,
   IconUsersGroup,
 } from '@tabler/icons-react'
-import { apiRequest, type ManagedRole, type RoleCatalog, type RoleCatalogPermission } from './api'
+import {
+  createRole,
+  deleteRole as deleteRoleRequest,
+  listRoles,
+  syncRolePermissions,
+  updateRole,
+  type CreateRoleInput,
+  type ManagedRole,
+  type RoleCatalog,
+  type RoleCatalogPermission,
+  type UpdateRoleInput,
+} from './api'
 
 type Props = {
   token: string
@@ -64,7 +75,7 @@ export default function RoleManagement({ token, onError, onMessage }: Props) {
   const refresh = useCallback(async () => {
     setBusy(true)
     try {
-      const response = await apiRequest<RoleCatalog>('/identity/roles', {}, token)
+      const response = await listRoles(token)
       setCatalog(response)
       setSelectedId((current) => response.data.roles.some((role) => role.id === current)
         ? current
@@ -95,9 +106,7 @@ export default function RoleManagement({ token, onError, onMessage }: Props) {
     if (!selectedRole) return
     setBusy(true)
     try {
-      await apiRequest(`/identity/roles/${selectedRole.id}/permissions`, {
-        method: 'PUT', body: JSON.stringify({ permission_ids: permissionIds, reason: permissionReason }),
-      }, token)
+      await syncRolePermissions(selectedRole.id, { permission_ids: permissionIds, reason: permissionReason }, token)
       onMessage(`Permission ${selectedRole.name} berhasil diperbarui.`)
       await refresh()
     } catch (cause) {
@@ -111,9 +120,7 @@ export default function RoleManagement({ token, onError, onMessage }: Props) {
     if (!selectedRole) return
     setBusy(true)
     try {
-      await apiRequest(`/identity/roles/${selectedRole.id}`, {
-        method: 'DELETE', body: JSON.stringify({ reason }),
-      }, token)
+      await deleteRoleRequest(selectedRole.id, reason, token)
       setDeleteOpened(false)
       setSelectedId('')
       onMessage(`Role ${selectedRole.name} berhasil dihapus.`)
@@ -225,9 +232,9 @@ function PermissionReadOnly({ groups, selected }: { groups: PermissionGroups; se
 function CreateRoleModal({ opened, token, permissions, onClose, onError, onCompleted }: { opened: boolean; token: string; permissions: RoleCatalogPermission[]; onClose: () => void; onError: (error: unknown) => void; onCompleted: (id: string) => Promise<void> }) {
   const [busy, setBusy] = useState(false)
   const groups = useMemo(() => groupPermissions(permissions), [permissions])
-  const form = useForm({
+  const form = useForm<CreateRoleInput>({
     mode: 'controlled',
-    initialValues: { code: '', name: '', description: '', assignment_scope: 'company', is_privileged: false, permission_ids: [] as string[], reason: '' },
+    initialValues: { code: '', name: '', description: '', assignment_scope: 'company', is_privileged: false, permission_ids: [], reason: '' },
     validate: {
       code: (value) => /^[a-z][a-z0-9-]{2,127}$/.test(value) ? null : 'Gunakan lowercase dan tanda hubung.',
       name: (value) => value.trim().length >= 3 ? null : 'Nama role wajib diisi.',
@@ -239,8 +246,7 @@ function CreateRoleModal({ opened, token, permissions, onClose, onError, onCompl
   async function submit(values: typeof form.values) {
     setBusy(true)
     try {
-      const response = await apiRequest<{ data: { id: string } }>('/identity/roles', { method: 'POST', body: JSON.stringify(values) }, token)
-      await onCompleted(response.data.id)
+      await onCompleted(await createRole(values, token))
     } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
 
@@ -249,10 +255,10 @@ function CreateRoleModal({ opened, token, permissions, onClose, onError, onCompl
 
 function EditRoleModal({ role, token, onClose, onError, onCompleted }: { role: ManagedRole; token: string; onClose: () => void; onError: (error: unknown) => void; onCompleted: () => Promise<void> }) {
   const [busy, setBusy] = useState(false)
-  const form = useForm({ mode: 'controlled', initialValues: { name: role.name, description: role.description ?? '', assignment_scope: role.assignment_scope, is_privileged: role.is_privileged, reason: '' }, validate: { name: (value) => value.trim().length >= 3 ? null : 'Nama role wajib diisi.', reason: (value) => value.trim().length >= 10 ? null : 'Alasan minimal 10 karakter.' } })
+  const form = useForm<UpdateRoleInput>({ mode: 'controlled', initialValues: { name: role.name, description: role.description ?? '', assignment_scope: role.assignment_scope as UpdateRoleInput['assignment_scope'], is_privileged: role.is_privileged, reason: '' }, validate: { name: (value) => value.trim().length >= 3 ? null : 'Nama role wajib diisi.', reason: (value) => value.trim().length >= 10 ? null : 'Alasan minimal 10 karakter.' } })
   async function submit(values: typeof form.values) {
     setBusy(true)
-    try { await apiRequest(`/identity/roles/${role.id}`, { method: 'PATCH', body: JSON.stringify(values) }, token); await onCompleted() } catch (cause) { onError(cause) } finally { setBusy(false) }
+    try { await updateRole(role.id, values, token); await onCompleted() } catch (cause) { onError(cause) } finally { setBusy(false) }
   }
   return <Modal opened onClose={onClose} title={`Edit ${role.name}`} centered><form onSubmit={form.onSubmit((values) => void submit(values))}><Stack><TextInput label="Role code" value={role.code} disabled /><TextInput label="Role name" required {...form.getInputProps('name')} /><Textarea label="Description" minRows={2} {...form.getInputProps('description')} /><Select label="Assignment scope" data={scopeData} allowDeselect={false} required {...form.getInputProps('assignment_scope')} /><Switch label="Privileged role" {...form.getInputProps('is_privileged', { type: 'checkbox' })} />{role.active_assignment_count > 0 && <Alert color="orange" icon={<IconAlertTriangle size={17} />}>Scope dan privileged classification tidak dapat diubah selama assignment aktif.</Alert>}<Textarea label="Change reason" minRows={2} required {...form.getInputProps('reason')} /><Button type="submit" loading={busy}>Save profile</Button></Stack></form></Modal>
 }
