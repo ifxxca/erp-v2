@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Company;
 use App\Models\Department;
+use App\Models\DocumentSequenceRule;
+use App\Models\Location;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Database\Seeder;
@@ -38,6 +40,29 @@ class FoundationSeeder extends Seeder
                 Department::query()->firstOrCreate(
                     ['company_id' => $company->id, 'code' => $departmentCode],
                     ['name' => $name, 'status' => 'active'],
+                );
+            }
+
+            if ($code === 'RKS') {
+                $location = Location::query()->firstOrCreate(
+                    ['company_id' => $company->id, 'code' => 'KRESEK'],
+                    ['name' => 'Warehouse Kresek', 'timezone' => 'Asia/Jakarta', 'status' => 'active'],
+                );
+                DocumentSequenceRule::query()->firstOrCreate(
+                    [
+                        'company_id' => $company->id,
+                        'location_id' => $location->id,
+                        'document_type' => 'maintenance.work_order',
+                        'version' => 1,
+                    ],
+                    [
+                        'type_code' => 'WO',
+                        'pattern' => '{TYPE}/{COMPANY}/{LOCATION}/{YYYY}/{MM}/{SEQ}',
+                        'period' => 'monthly',
+                        'padding' => 5,
+                        'timezone' => 'Asia/Jakarta',
+                        'effective_from' => '2020-01-01',
+                    ],
                 );
             }
         }

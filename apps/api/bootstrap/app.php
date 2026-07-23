@@ -10,6 +10,7 @@ use App\Http\Middleware\RequireGlobalPermission;
 use App\Http\Middleware\RequireRecentMfa;
 use App\Http\Middleware\RequireScopedPermission;
 use App\Modules\Files\Application\FileWorkflowException;
+use App\Modules\FleetMaintenance\Application\FleetMaintenanceException;
 use App\Modules\Identity\Application\AccessGovernanceException;
 use App\Modules\Identity\Application\MfaException;
 use App\Modules\Identity\Application\RefreshTokenException;
@@ -42,6 +43,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'code' => $exception->errorCode,
         ], $exception->httpStatus));
         $exceptions->render(fn (FileWorkflowException $exception) => response()->json([
+            'message' => $exception->getMessage(),
+            'code' => $exception->errorCode,
+        ], $exception->httpStatus));
+        $exceptions->render(fn (FleetMaintenanceException $exception) => response()->json([
             'message' => $exception->getMessage(),
             'code' => $exception->errorCode,
         ], $exception->httpStatus));

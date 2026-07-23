@@ -33,6 +33,8 @@ Dokumen ini memastikan masalah yang ditemukan pada ERP lama ditangani oleh desai
 | Ticket, memo, notification | Support/Shared Platform | Re-evaluate kebutuhan; bukan otomatis parity |
 | Report legacy | Reporting/read model | Definisikan ulang KPI dan source; jangan menyalin query tanpa validasi |
 
+Profil detail vehicle/service legacy dan kontrak import vehicle pertama dicatat pada [Fleet + Maintenance Pilot](14-FLEET-MAINTENANCE-PILOT.md).
+
 ## Rule feature parity
 
 Satu fitur legacy hanya masuk backlog V2 bila memenuhi minimal satu kondisi:

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyMembershipController;
 use App\Http\Controllers\Api\V1\FileController;
+use App\Http\Controllers\Api\V1\FleetMaintenanceController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\IdentityCompanyController;
 use App\Http\Controllers\Api\V1\IdentityUserController;
@@ -70,6 +71,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('/notifications', [NotificationController::class, 'index']);
             Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read']);
             Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
+            Route::get('/operations/context', [FleetMaintenanceController::class, 'context']);
 
             Route::post('/companies/{company}/files', [FileController::class, 'store'])
                 ->middleware('permission.scoped:file.asset.create');
@@ -81,6 +83,29 @@ Route::prefix('v1')->group(function (): void {
                 ->middleware(['permission.scoped:file.asset.view', 'throttle:60,1']);
             Route::delete('/companies/{company}/files/{file}', [FileController::class, 'destroy'])
                 ->middleware('permission.scoped:file.asset.delete');
+
+            Route::prefix('/companies/{company}/locations/{location}')->group(function (): void {
+                Route::get('/fleet/vehicle-types', [FleetMaintenanceController::class, 'vehicleTypes'])
+                    ->middleware('permission.scoped:fleet.vehicle.view');
+                Route::post('/fleet/vehicle-types', [FleetMaintenanceController::class, 'createVehicleType'])
+                    ->middleware('permission.scoped:fleet.vehicle.manage');
+                Route::get('/fleet/vehicles', [FleetMaintenanceController::class, 'vehicles'])
+                    ->middleware('permission.scoped:fleet.vehicle.view');
+                Route::post('/fleet/vehicles', [FleetMaintenanceController::class, 'createVehicle'])
+                    ->middleware('permission.scoped:fleet.vehicle.manage');
+                Route::get('/fleet/vehicles/{vehicle}', [FleetMaintenanceController::class, 'vehicle'])
+                    ->middleware('permission.scoped:fleet.vehicle.view');
+                Route::post('/fleet/vehicles/{vehicle}/status', [FleetMaintenanceController::class, 'changeVehicleStatus'])
+                    ->middleware('permission.scoped:fleet.vehicle.manage');
+                Route::get('/maintenance/work-orders', [FleetMaintenanceController::class, 'workOrders'])
+                    ->middleware('permission.scoped:maintenance.work-order.view');
+                Route::post('/maintenance/work-orders', [FleetMaintenanceController::class, 'createWorkOrder'])
+                    ->middleware('permission.scoped:maintenance.work-order.manage');
+                Route::get('/maintenance/work-orders/{workOrder}', [FleetMaintenanceController::class, 'workOrder'])
+                    ->middleware('permission.scoped:maintenance.work-order.view');
+                Route::post('/maintenance/work-orders/{workOrder}/transition', [FleetMaintenanceController::class, 'transitionWorkOrder'])
+                    ->middleware('permission.scoped:maintenance.work-order.manage');
+            });
 
             Route::post('/identity/users/invitations', [InvitationController::class, 'store'])
                 ->middleware('permission.scoped:identity.user.manage');

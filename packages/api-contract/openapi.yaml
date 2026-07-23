@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.14.0
+  version: 0.15.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -1480,6 +1480,228 @@ paths:
           $ref: "#/components/responses/Conflict"
         "429":
           description: Download rate limit exceeded.
+  /operations/context:
+    get:
+      operationId: getOperationsContext
+      summary: List active company/location workspaces visible to the authenticated operator.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Access-derived Operations workspaces and capabilities.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/OperationsContext" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /companies/{companyId}/locations/{locationId}/fleet/vehicle-types:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+    get:
+      operationId: listVehicleTypes
+      summary: List active vehicle types for a location-scoped Fleet workspace.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Active company vehicle types.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/VehicleType" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createVehicleType
+      summary: Create a company vehicle type.
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateVehicleTypeRequest" }
+      responses:
+        "201":
+          description: Vehicle type created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/VehicleType" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/fleet/vehicles:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+    get:
+      operationId: listVehicles
+      summary: List vehicles in one authorized operating location.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/VehicleStatus" } }
+      responses:
+        "200":
+          description: Paginated vehicles.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VehiclePage" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createVehicle
+      summary: Register a vehicle with an initial available status history.
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateVehicleRequest" }
+      responses:
+        "201":
+          description: Vehicle registered.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Vehicle" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/fleet/vehicles/{vehicleId}:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/VehicleId" }
+    get:
+      operationId: getVehicle
+      summary: Get one vehicle and its latest status history.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Vehicle detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Vehicle" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Vehicle is outside the requested scope or does not exist. }
+  /companies/{companyId}/locations/{locationId}/fleet/vehicles/{vehicleId}/status:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/VehicleId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      operationId: changeVehicleStatus
+      summary: Apply a guarded vehicle status transition and append its history.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeVehicleStatusRequest" }
+      responses:
+        "200":
+          description: Vehicle status changed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Vehicle" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/maintenance/work-orders:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+    get:
+      operationId: listMaintenanceWorkOrders
+      summary: List maintenance work orders in one operating location.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/WorkOrderStatus" } }
+      responses:
+        "200":
+          description: Paginated work orders.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkOrderPage" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      operationId: createMaintenanceWorkOrder
+      summary: Create an unnumbered maintenance work-order draft with job lines.
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWorkOrderRequest" }
+      responses:
+        "201":
+          description: Work-order draft created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/MaintenanceWorkOrder" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/maintenance/work-orders/{workOrderId}:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/WorkOrderId" }
+    get:
+      operationId: getMaintenanceWorkOrder
+      summary: Get a maintenance work order with vehicle and job lines.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Work-order detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/MaintenanceWorkOrder" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Work order is outside the requested scope or does not exist. }
+  /companies/{companyId}/locations/{locationId}/maintenance/work-orders/{workOrderId}/transition:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/WorkOrderId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      operationId: transitionMaintenanceWorkOrder
+      summary: Schedule, start, complete, or cancel a work order through the guarded lifecycle.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransitionWorkOrderRequest" }
+      responses:
+        "200":
+          description: Work-order transition committed with synchronized vehicle state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/MaintenanceWorkOrder" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
 components:
   securitySchemes:
     cookieAuth:
@@ -1528,6 +1750,21 @@ components:
       schema:
         type: string
         pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    LocationId:
+      name: locationId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }
+    VehicleId:
+      name: vehicleId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }
+    WorkOrderId:
+      name: workOrderId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }
     FileId:
       name: fileId
       in: path
@@ -1619,6 +1856,137 @@ components:
         type: string
         enum: ["true", "false"]
   schemas:
+    OperationsContext:
+      type: object
+      required: [company, location, capabilities]
+      properties:
+        company:
+          type: object
+          required: [id, code, legal_name]
+          properties: { id: { type: string }, code: { type: string }, legal_name: { type: string } }
+        location:
+          type: object
+          required: [id, code, name, timezone]
+          properties: { id: { type: string }, code: { type: string }, name: { type: string }, timezone: { type: string } }
+        capabilities:
+          type: object
+          additionalProperties: { type: boolean }
+    VehicleStatus:
+      type: string
+      enum: [available, in_use, maintenance, blocked, inactive]
+    WorkOrderStatus:
+      type: string
+      enum: [draft, scheduled, in_progress, completed, cancelled]
+    VehicleType:
+      type: object
+      required: [id, code, name]
+      properties: { id: { type: string }, code: { type: string }, name: { type: string } }
+    CreateVehicleTypeRequest:
+      type: object
+      required: [code, name]
+      properties: { code: { type: string, pattern: "^[A-Z0-9_-]+$" }, name: { type: string } }
+    Vehicle:
+      type: object
+      required: [id, code, plate_number, brand, model, current_odometer, operational_status]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        plate_number: { type: string }
+        brand: { type: string }
+        model: { type: string }
+        model_year: { type: [integer, "null"] }
+        ownership_type: { type: string, enum: [owned, leased, vendor] }
+        provider_name: { type: [string, "null"] }
+        current_odometer: { type: integer, minimum: 0 }
+        operational_status: { $ref: "#/components/schemas/VehicleStatus" }
+        status_reason: { type: [string, "null"] }
+        type: { $ref: "#/components/schemas/VehicleType" }
+    CreateVehicleRequest:
+      type: object
+      required: [vehicle_type_id, code, plate_number, brand, model, ownership_type, current_odometer]
+      properties:
+        vehicle_type_id: { type: string }
+        code: { type: string }
+        plate_number: { type: string }
+        brand: { type: string }
+        model: { type: string }
+        model_year: { type: [integer, "null"] }
+        ownership_type: { type: string, enum: [owned, leased, vendor] }
+        provider_name: { type: [string, "null"] }
+        current_odometer: { type: integer, minimum: 0 }
+    ChangeVehicleStatusRequest:
+      type: object
+      required: [status, reason]
+      properties:
+        status: { $ref: "#/components/schemas/VehicleStatus" }
+        reason: { type: string, minLength: 5 }
+    VehiclePage:
+      type: object
+      required: [data, current_page, last_page, total]
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/Vehicle" } }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        total: { type: integer }
+    WorkOrderJob:
+      type: object
+      required: [id, line_number, description, status, labor_cost]
+      properties:
+        id: { type: string }
+        line_number: { type: integer }
+        description: { type: string }
+        status: { type: string, enum: [pending, in_progress, completed, cancelled] }
+        labor_cost: { type: string }
+        note: { type: [string, "null"] }
+    MaintenanceWorkOrder:
+      type: object
+      required: [id, work_order_date, priority, status, problem_description, total_cost, vehicle, jobs]
+      properties:
+        id: { type: string }
+        document_number: { type: [string, "null"] }
+        work_order_date: { type: string, format: date }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        status: { $ref: "#/components/schemas/WorkOrderStatus" }
+        problem_description: { type: string }
+        completion_note: { type: [string, "null"] }
+        labor_cost: { type: string }
+        parts_cost: { type: string }
+        total_cost: { type: string }
+        vehicle: { $ref: "#/components/schemas/Vehicle" }
+        jobs: { type: array, items: { $ref: "#/components/schemas/WorkOrderJob" } }
+    CreateWorkOrderRequest:
+      type: object
+      required: [vehicle_id, work_order_date, priority, problem_description, jobs]
+      properties:
+        vehicle_id: { type: string }
+        work_order_date: { type: string, format: date }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        problem_description: { type: string, minLength: 5 }
+        parts_cost: { type: number, minimum: 0 }
+        jobs:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [description, labor_cost]
+            properties:
+              description: { type: string }
+              labor_cost: { type: number, minimum: 0 }
+              note: { type: [string, "null"] }
+    TransitionWorkOrderRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [scheduled, in_progress, completed, cancelled] }
+        note: { type: [string, "null"] }
+    WorkOrderPage:
+      type: object
+      required: [data, current_page, last_page, total]
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/MaintenanceWorkOrder" } }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        total: { type: integer }
     InitiateFileRequest:
       type: object
       required: [purpose, original_name, mime_type, size, checksum_sha256]

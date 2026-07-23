@@ -42,7 +42,11 @@ Status date: 2026-07-23
 - Protected low-cardinality Prometheus gauges for outbox/delivery backlog and age, queued/failed jobs, pending privileged access, and quarantined files.
 - Structured JSON stderr logging, correlated HTTP completion telemetry, and scheduled warning/critical threshold evaluation.
 - Audited single-record outbox and notification-delivery re-drive with mandatory operator/reason, retained attempt history, and independent retry-cycle budgets.
-- React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
+- Location-scoped Fleet vehicle master with canonical availability lifecycle, immutable status history, company-safe natural keys, and audited/idempotent mutations.
+- Maintenance work order draft/schedule/start/complete/cancel lifecycle with job lines, synchronized vehicle maintenance state, conflict guards, and atomic number allocation on scheduling.
+- RKS / Warehouse Kresek pilot location and effective-dated work-order sequence rule.
+- Mantine Operations Web login/MFA, access-derived site discovery, Fleet dashboard, vehicle/type registration, and work-order lifecycle controls.
+- React 19/TypeScript/Vite Management ERP identity workspace plus functional Operations Web Fleet/Maintenance pilot.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
 - Mantine-based ERP design system covering the app shell, responsive navigation, forms, tables, drawers, modals, notifications, and branded theme.
@@ -57,7 +61,7 @@ Status date: 2026-07-23
 
 ## Verified locally
 
-- API test suite: 118 tests, 685 assertions.
+- API test suite: 122 tests, 727 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -90,7 +94,7 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 
 - OpenAPI generated clients.
 - Production collector/dashboard/alert routing, telemetry retention/access policy, and distributed tracing integration.
-- Fleet/Maintenance domain migrations and flows.
+- Fleet checklist, odometer trip, documents, service due schedule, parts/inventory boundary, vendor billing, and maintenance approval workflow.
 - Flutter mobile application.
 
 The mobile token lifecycle is implemented, but production deployment still requires PostgreSQL/container verification and mobile OS secure-storage integration.
