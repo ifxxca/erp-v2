@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,6 +60,20 @@ class DocumentSequenceRule extends Model
                 throw new LogicException('An allocated document sequence rule is immutable; publish a new version.');
             }
         });
+    }
+
+    /**
+     * Keep the non-null scope key present before PostgreSQL prepares an insert.
+     * The saving hook remains a final guard for low-level attribute changes.
+     */
+    protected function locationId(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): array => [
+                'location_id' => $value,
+                'scope_key' => $value ?? 'GLOBAL',
+            ],
+        );
     }
 
     public function company(): BelongsTo

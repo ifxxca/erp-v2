@@ -37,8 +37,8 @@ services:
       FILES_ALLOW_UNSCANNED: "false"
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
-    ports:
-      - "${API_PORT:-8000}:8000"
+    expose:
+      - "8000"
     volumes:
       - ../apps/api:/app
     depends_on:
@@ -56,6 +56,21 @@ services:
       timeout: 5s
       retries: 6
       start_period: 20s
+  gateway:
+    image: nginx:alpine
+    ports:
+      - "${API_PORT:-8000}:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/api/v1/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
   worker:
     build:
       context: ..
@@ -143,7 +158,9 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      # PostgreSQL 18 stores clusters below a major-version directory so the
+      # mount must sit above PGDATA to keep pg_upgrade --link viable.
+      - postgres-data-v18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -200,7 +217,7 @@ services:
       - "${MAILPIT_UI_PORT:-8025}:8025"
 
 volumes:
-  postgres-data:
+  postgres-data-v18:
   redis-data:
   minio-data:
   clamav-data:

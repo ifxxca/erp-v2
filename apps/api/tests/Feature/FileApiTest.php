@@ -208,9 +208,7 @@ class FileApiTest extends TestCase
         Storage::disk('local')->put($asset->object_key, $content);
         $asset->forceFill(['pending_expires_at' => now()->subMinute()])->save();
 
-        $this->travelTo(now()->addHour()->startOfHour());
-        Artisan::call('schedule:run');
-        $this->travelBack();
+        Artisan::call('files:expire-abandoned');
 
         Storage::disk('local')->assertMissing($asset->object_key);
         $this->assertDatabaseHas('files', ['id' => $fileId, 'status' => 'expired']);

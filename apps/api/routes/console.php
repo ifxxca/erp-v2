@@ -18,7 +18,7 @@ Schedule::call(fn () => DB::table('idempotency_keys')->where('expires_at', '<', 
     ->name('request-control:purge-expired-idempotency-keys')
     ->withoutOverlapping();
 
-Schedule::call(function (): void {
+$expireAbandonedFiles = function (): void {
     FileAsset::query()
         ->whereIn('status', ['pending', 'uploaded'])
         ->where('pending_expires_at', '<', now())
@@ -37,7 +37,13 @@ Schedule::call(function (): void {
                 });
             }
         });
-})->hourly()
+};
+
+Artisan::command('files:expire-abandoned', function () use ($expireAbandonedFiles): void {
+    $expireAbandonedFiles();
+})->purpose('Expire abandoned file uploads and preserve their audit evidence.');
+
+Schedule::command('files:expire-abandoned')->hourly()
     ->name('files:expire-abandoned-uploads')
     ->withoutOverlapping();
 

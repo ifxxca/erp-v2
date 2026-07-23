@@ -24,11 +24,15 @@ return new class extends Migration
         Schema::create('mobile_refresh_tokens', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('family_id')->constrained('mobile_refresh_token_families')->cascadeOnDelete();
-            $table->foreignUlid('parent_id')->nullable()->constrained('mobile_refresh_tokens')->restrictOnDelete();
+            $table->ulid('parent_id')->nullable();
             $table->string('token_hash', 64)->unique();
             $table->timestamp('consumed_at')->nullable()->index();
             $table->timestamp('expires_at')->index();
             $table->timestamps();
+        });
+
+        Schema::table('mobile_refresh_tokens', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('mobile_refresh_tokens')->restrictOnDelete();
         });
 
         Schema::table('personal_access_tokens', function (Blueprint $table) {

@@ -20,12 +20,16 @@ return new class extends Migration
         Schema::create('departments', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('company_id')->constrained()->restrictOnDelete();
-            $table->foreignUlid('parent_id')->nullable()->constrained('departments')->restrictOnDelete();
+            $table->ulid('parent_id')->nullable();
             $table->string('code', 64);
             $table->string('name');
             $table->enum('status', ['active', 'inactive'])->default('active')->index();
             $table->timestamps();
             $table->unique(['company_id', 'code']);
+        });
+
+        Schema::table('departments', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('departments')->restrictOnDelete();
         });
 
         Schema::create('locations', function (Blueprint $table) {
