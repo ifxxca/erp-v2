@@ -1,6 +1,6 @@
 # Foundation Implementation Status
 
-Status date: 2026-07-22
+Status date: 2026-07-23
 
 ## Implemented
 
@@ -33,6 +33,11 @@ Status date: 2026-07-22
 - Company-scoped private file lifecycle with initiate/upload/finalize separation, owner enforcement, exact size/SHA-256 validation, MIME/signature allowlist, quarantine, asynchronous ClamAV scanning, authorized streaming download, tombstoned deletion, abandoned-upload cleanup, and append-only audit.
 - S3-compatible MinIO bucket initialization plus a Redis queue worker and ClamAV service in local Compose; unscanned mode is explicit, non-production-only, and never represented as clean.
 - Internal atomic document-number service with company/location rule resolution, effective-dated versions, controlled placeholders, timezone-aware period reset, database upsert counters, subject-idempotent allocation, rollback safety, and transactional audit.
+- Transactional outbox writer with canonical payload deduplication, atomic domain rollback, leased dispatch, persisted attempt history, bounded retry/backoff, and dead-letter state.
+- Central user notification inbox with user isolation, unread filtering/counting, read/read-all commands, idempotent inbox creation, and independent per-channel delivery status.
+- Mantine ERP notification center with unread badge, responsive drawer, message read state, and mark-all action against the shared API.
+- Privileged-access request, approval, rejection, and revocation notifications now originate inside their owning transaction through the outbox; mail provider failures cannot roll back access governance state.
+- Dedicated scheduler and queue worker deployment processes for outbox polling and notification delivery.
 - React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
@@ -42,13 +47,13 @@ Status date: 2026-07-22
 - Mantine Roles & Permissions workspace covering catalog search, system-role inspection, custom-role creation/profile editing, permission mapping, and guarded deletion.
 - Mantine identity Access tab covering standard-role catalog, scoped effective-dated assignment, history, and guarded revocation.
 - npm workspace plus shared API-contract and web-UI packages.
-- PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, and Mailpit local compose definition.
+- PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, scheduler, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
 - CI jobs for PostgreSQL migration/seed validation, PHP tests/format/audit, and web build/lint.
 
 ## Verified locally
 
-- API test suite: 104 tests, 599 assertions.
+- API test suite: 112 tests, 647 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -59,6 +64,7 @@ Status date: 2026-07-22
 - Request-ID preservation/generation, correlated framework errors and audit records, canonical JSON replay without duplicate side effects, payload-mismatch denial, in-progress retry signaling, and failed-response recovery.
 - File checksum/signature rejection, upload ownership, company isolation, quarantine/scan state, infected-object removal, authorized download, deletion tombstone, and audit evidence.
 - Document-number transaction guard, sequential allocation, subject replay, rollback reuse, monthly reset, location override/global fallback, company isolation, unsafe-pattern denial, and audit evidence.
+- Outbox transaction guard/rollback, canonical deduplication, request correlation, idempotent inbox projection, transient retry recovery, permanent failure dead-lettering, provider delivery retry exhaustion, and notification API ownership/read-state behavior.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.
@@ -78,7 +84,7 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - OpenAPI generated clients.
-- Remaining shared-platform foundations: transactional outbox/notification worker and production observability.
+- Remaining shared-platform foundation: production observability.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 

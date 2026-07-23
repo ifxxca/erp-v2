@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\IdentityUserController;
 use App\Http\Controllers\Api\V1\InvitationController;
 use App\Http\Controllers\Api\V1\MfaController;
 use App\Http\Controllers\Api\V1\MobileTokenController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OrganizationMembershipController;
 use App\Http\Controllers\Api\V1\PasswordRecoveryController;
 use App\Http\Controllers\Api\V1\PrivilegedAccessController;
@@ -53,6 +54,10 @@ Route::prefix('v1')->group(function (): void {
                 ->whereNumber('tokenId');
             Route::post('/auth/sessions/revoke-all', [SessionController::class, 'revokeAll'])
                 ->middleware('throttle:3,1');
+
+            Route::get('/notifications', [NotificationController::class, 'index']);
+            Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read']);
+            Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
 
             Route::post('/companies/{company}/files', [FileController::class, 'store'])
                 ->middleware('permission.scoped:file.asset.create');

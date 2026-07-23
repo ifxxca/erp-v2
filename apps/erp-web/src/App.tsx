@@ -59,6 +59,7 @@ type Workspace = 'identity' | 'access' | 'roles' | 'security'
 const AccessReview = lazy(() => import('./AccessReview'))
 const IdentityDrawer = lazy(() => import('./IdentityDrawer'))
 const InvitationModal = lazy(() => import('./InvitationModal'))
+const NotificationCenter = lazy(() => import('./NotificationCenter'))
 const RoleManagement = lazy(() => import('./RoleManagement'))
 const SecurityCenter = lazy(() => import('./SecurityCenter'))
 
@@ -243,7 +244,7 @@ function App() {
       <AppShell.Header className="app-header">
         <Group h="100%" px="lg" justify="space-between">
           <Group><Burger opened={navOpened} onClick={toggleNav} hiddenFrom="sm" size="sm" /><Brand compact /></Group>
-          <Group gap="xs"><Avatar size="sm" color="forest">{currentUser?.name.slice(0, 2).toUpperCase()}</Avatar><Text size="sm" fw={700} visibleFrom="xs">{currentUser?.name}</Text></Group>
+          <Group gap="xs"><Suspense fallback={null}><NotificationCenter token={token} onError={handleError} /></Suspense><Avatar size="sm" color="forest">{currentUser?.name.slice(0, 2).toUpperCase()}</Avatar><Text size="sm" fw={700} visibleFrom="xs">{currentUser?.name}</Text></Group>
         </Group>
       </AppShell.Header>
 

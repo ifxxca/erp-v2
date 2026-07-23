@@ -80,6 +80,10 @@ services:
       FILES_ALLOW_UNSCANNED: "false"
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
+      FRONTEND_URL: http://localhost:5173
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
     volumes:
       - ../apps/api:/app
     depends_on:
@@ -91,6 +95,35 @@ services:
         condition: service_completed_successfully
       clamav:
         condition: service_started
+      mailpit:
+        condition: service_started
+  scheduler:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/api.Dockerfile
+    working_dir: /app
+    command: php artisan schedule:work
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-rajawali_v2}
+      DB_USERNAME: ${POSTGRES_USER:-rajawali}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-rajawali_local_only}
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ../apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
   postgres:
     image: postgres:18-alpine
     environment:

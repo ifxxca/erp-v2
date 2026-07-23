@@ -11,7 +11,6 @@ use App\Models\User;
 use App\Models\UserCompanyMembership;
 use App\Models\UserMfaMethod;
 use App\Models\UserRoleAssignment;
-use App\Notifications\PrivilegedAccessNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -88,7 +87,12 @@ class PrivilegedAccessApiTest extends TestCase
         ]);
         $this->assertDatabaseHas('audit_logs', ['event' => 'identity.privileged_access_requested']);
         $this->assertDatabaseHas('audit_logs', ['event' => 'identity.privileged_access_approved']);
-        Notification::assertSentTo($target, PrivilegedAccessNotification::class);
+        $this->assertDatabaseHas('outbox_messages', [
+            'event_type' => 'notification.requested',
+            'aggregate_type' => 'access_request',
+            'aggregate_id' => $accessRequestId,
+            'status' => 'pending',
+        ]);
     }
 
     public function test_requester_cannot_approve_their_own_request_even_with_both_permissions(): void
@@ -284,7 +288,12 @@ class PrivilegedAccessApiTest extends TestCase
         $this->assertNull(PersonalAccessToken::findToken($targetToken));
         $audit = AuditLog::query()->where('event', 'identity.privileged_access_revoked')->sole();
         $this->assertSame('Access no longer required', $audit->metadata['reason']);
-        Notification::assertSentTo($target, PrivilegedAccessNotification::class);
+        $this->assertDatabaseHas('outbox_messages', [
+            'event_type' => 'notification.requested',
+            'aggregate_type' => 'user_role_assignment',
+            'aggregate_id' => $assignment->id,
+            'status' => 'pending',
+        ]);
     }
 
     /** @return array{Company, User, User, Role} */

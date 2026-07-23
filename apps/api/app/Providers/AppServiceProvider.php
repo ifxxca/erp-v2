@@ -6,6 +6,8 @@ use App\Models\PersonalAccessToken;
 use App\Modules\Files\Application\FileScanner;
 use App\Modules\Files\Infrastructure\ClamAvFileScanner;
 use App\Modules\Files\Infrastructure\SkippedFileScanner;
+use App\Modules\Notifications\Application\NotificationChannelSender;
+use App\Modules\Notifications\Infrastructure\LaravelNotificationChannelSender;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 use LogicException;
@@ -22,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
             'skipped' => new SkippedFileScanner,
             default => throw new LogicException('FILES_SCAN_DRIVER must be clamav or skipped.'),
         });
+        $this->app->bind(NotificationChannelSender::class, LaravelNotificationChannelSender::class);
     }
 
     /**

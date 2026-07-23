@@ -41,6 +41,11 @@ class FoundationSchemaTest extends TestCase
             'document_sequence_rules',
             'document_sequences',
             'document_number_allocations',
+            'outbox_messages',
+            'outbox_attempts',
+            'notifications',
+            'notification_deliveries',
+            'notification_delivery_attempts',
         ];
 
         foreach ($expectedTables as $table) {

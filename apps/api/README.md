@@ -31,11 +31,21 @@ Authenticated business mutations accept an optional `Idempotency-Key` containing
 - `GET /companies/{company}/files/{file}/download` streams only a `ready` private object after scoped authorization.
 - `DELETE /companies/{company}/files/{file}` removes the binary and keeps a metadata/audit tombstone; attached files must be deleted by their owning domain workflow.
 
-The Compose stack creates the private MinIO bucket, runs a Redis queue worker, and scans with ClamAV. Production must keep `FILES_ALLOW_UNSCANNED=false`. The test-only skipped scanner records `scan_status=skipped`, never `clean`. Abandoned reservations expire after 24 hours. Legal retention remains unset until a domain attaches the file and Q-206 defines the policy.
+The Compose stack creates the private MinIO bucket, runs Redis queue worker and scheduler processes, and scans with ClamAV. Production must keep `FILES_ALLOW_UNSCANNED=false`. The test-only skipped scanner records `scan_status=skipped`, never `clean`. Abandoned reservations expire after 24 hours. Legal retention remains unset until a domain attaches the file and Q-206 defines the policy.
 
 ## Internal document numbering
 
 `DocumentNumberService` allocates document numbers only inside the owning domain transaction; there is intentionally no generic API endpoint. Rules are company-scoped with optional location override, effective-dated versions, controlled placeholders, timezone-aware period reset, and an atomic `rule + period` counter. A repeated subject returns its existing allocation, while transaction rollback also rolls back the counter and audit record. Actual Fleet/Maintenance patterns remain unseeded until Q-207 is approved.
+
+## Transactional outbox and notifications
+
+`OutboxWriter` records an asynchronous intent only inside the owning domain transaction. Canonical payload fingerprinting and a hashed deduplication key reject conflicting replay. The scheduler claims pending/stale work, while queue jobs persist attempt history, bounded backoff, and dead-letter state. Inbox creation is idempotent; mail delivery is isolated in a second job and therefore cannot roll back a committed business transaction.
+
+- `GET /notifications` returns the authenticated identity's paginated inbox and unread count.
+- `PATCH /notifications/{notification}/read` marks one owned item read.
+- `POST /notifications/read-all` marks all owned items read.
+
+Privileged-access lifecycle notifications are the first domain producer. The API, scheduler, and queue worker must all run in deployed environments. External mail remains at-least-once unless its provider supports an idempotency key.
 
 ## Identity endpoints
 
@@ -85,7 +95,7 @@ Token idle timeout is enforced before Sanctum updates `last_used_at`: ERP Web 30
 
 Mobile refresh tokens are stored server-side only as SHA-256 hashes, rotate on every use, and retain their consumed history for replay detection. Rotation does not extend the 30-day family expiry. Mobile clients must transmit them only over TLS and keep them in platform-protected secure storage, never ordinary preferences or logs.
 
-The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.12.0).
+The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.13.0).
 
 ## Verification
 

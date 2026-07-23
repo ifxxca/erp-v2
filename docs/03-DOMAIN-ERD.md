@@ -775,6 +775,81 @@ erDiagram
 
 Raw idempotency key tidak disimpan. Unique scope adalah `user_id + key_hash`; route, query, dan canonical JSON payload masuk ke fingerprint. Record `processing` kedaluwarsa setelah lima menit agar crash dapat di-retry, sedangkan response `completed` disimpan 24 jam. Response gagal dan response terlalu besar tidak disimpan.
 
+### Transactional outbox dan notification inbox
+
+```mermaid
+erDiagram
+    COMPANIES o|--o{ OUTBOX_MESSAGES : scopes
+    OUTBOX_MESSAGES ||--o{ OUTBOX_ATTEMPTS : retries
+    OUTBOX_MESSAGES ||--o{ NOTIFICATIONS : projects
+    USERS ||--o{ NOTIFICATIONS : receives
+    NOTIFICATIONS ||--o{ NOTIFICATION_DELIVERIES : fans_out
+    NOTIFICATION_DELIVERIES ||--o{ NOTIFICATION_DELIVERY_ATTEMPTS : retries
+
+    OUTBOX_MESSAGES {
+        ulid id PK
+        ulid company_id FK
+        string event_type
+        string aggregate_type
+        string aggregate_id
+        char deduplication_key_hash UK
+        char payload_fingerprint
+        json payload
+        json headers
+        string request_id
+        string status
+        int attempts
+        datetime available_at
+        datetime claimed_at
+        datetime processed_at
+        datetime dead_lettered_at
+    }
+    OUTBOX_ATTEMPTS {
+        ulid id PK
+        ulid outbox_message_id FK
+        int attempt_no UK
+        string status
+        string worker_id
+        string error_code
+        datetime started_at
+        datetime finished_at
+    }
+    NOTIFICATIONS {
+        ulid id PK
+        ulid company_id FK
+        ulid user_id FK
+        ulid source_outbox_id FK
+        string kind
+        string title
+        text body
+        json data
+        string action_url
+        datetime read_at
+    }
+    NOTIFICATION_DELIVERIES {
+        ulid id PK
+        ulid notification_id FK
+        string channel UK
+        string status
+        int attempts
+        datetime available_at
+        datetime claimed_at
+        datetime delivered_at
+        datetime dead_lettered_at
+    }
+    NOTIFICATION_DELIVERY_ATTEMPTS {
+        ulid id PK
+        ulid notification_delivery_id FK
+        int attempt_no UK
+        string status
+        string error_code
+        datetime started_at
+        datetime finished_at
+    }
+```
+
+Domain menulis `outbox_messages` di transaksi yang sama dengan perubahan aggregate. Dedupe key hanya disimpan sebagai SHA-256 dan tidak dapat dipakai ulang untuk event/payload berbeda. Handler membentuk satu inbox per `source_outbox_id + user_id`, lalu membentuk satu delivery per channel. Inbox bersifat idempotent; delivery provider eksternal bersifat at-least-once karena crash setelah provider menerima pesan tetapi sebelum commit status dapat memicu pengiriman ulang. Attempt dan dead-letter mempertahankan bukti operasional tanpa menggagalkan transaksi bisnis yang sudah commit.
+
 ## Constraint lintas domain
 
 - Nomor dokumen unik setidaknya per tenant/perusahaan dan tipe dokumen.

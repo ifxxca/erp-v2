@@ -30,6 +30,30 @@ export type CurrentUser = {
   status: string
 }
 
+export type PlatformNotification = {
+  id: string
+  company_id: string | null
+  kind: string
+  title: string
+  body: string
+  data: Record<string, unknown>
+  action_url: string | null
+  read_at: string | null
+  created_at: string
+  deliveries: Record<string, 'pending' | 'processing' | 'delivered' | 'dead_letter'>
+}
+
+export type NotificationPage = {
+  data: PlatformNotification[]
+  meta: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    unread_count: number
+  }
+}
+
 export type Company = {
   id: string
   code: string

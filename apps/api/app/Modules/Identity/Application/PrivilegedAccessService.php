@@ -7,11 +7,10 @@ use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRoleAssignment;
-use App\Notifications\PrivilegedAccessNotification;
+use App\Modules\Outbox\Application\OutboxWriter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpFoundation\Response;
 
 class PrivilegedAccessService
@@ -19,6 +18,7 @@ class PrivilegedAccessService
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly MobileTokenService $mobileTokens,
+        private readonly OutboxWriter $outbox,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -42,7 +42,7 @@ class PrivilegedAccessService
         );
         $this->assertRoleScope($role, $data['department_id'] ?? null, $data['location_id'] ?? null);
 
-        $accessRequest = DB::transaction(function () use ($company, $actor, $target, $data, $httpRequest) {
+        $accessRequest = DB::transaction(function () use ($company, $actor, $target, $role, $data, $httpRequest) {
             $duplicate = $this->scopeQuery(
                 AccessRequest::query()
                     ->where('target_user_id', $target->id)
@@ -102,21 +102,27 @@ class PrivilegedAccessService
                 ],
                 $httpRequest,
             );
+            $recipientIds = $this->companyAccessOwners($company)
+                ->push($target)
+                ->pluck('id')
+                ->unique()
+                ->values()
+                ->all();
+            $this->recordNotification(
+                $accessRequest,
+                $company,
+                $recipientIds,
+                'requested',
+                $role->name,
+                $target->name,
+                $data['reason'],
+                $httpRequest,
+            );
 
             return $accessRequest;
         });
 
         $accessRequest->load(['targetUser', 'role', 'company', 'requester']);
-        $recipients = $this->companyAccessOwners($company)
-            ->push($target)
-            ->unique('id');
-        Notification::send($recipients, new PrivilegedAccessNotification(
-            'requested',
-            $accessRequest->role->name,
-            $company->legal_name,
-            $target->name,
-            $data['reason'],
-        ));
 
         return $accessRequest;
     }
@@ -219,6 +225,16 @@ class PrivilegedAccessService
                 ['access_request_id' => $accessRequest->id, 'company_id' => $company->id],
                 $httpRequest,
             );
+            $this->recordNotification(
+                $accessRequest,
+                $company,
+                [$accessRequest->requested_by, $accessRequest->target_user_id],
+                'approved',
+                $accessRequest->role->name,
+                $accessRequest->targetUser->name,
+                $note,
+                $httpRequest,
+            );
 
             return $assignment;
         });
@@ -230,8 +246,6 @@ class PrivilegedAccessService
                 Response::HTTP_CONFLICT,
             );
         }
-
-        $this->notifyDecision($accessRequest->fresh(), $company, 'approved', $note);
 
         return $assignment;
     }
@@ -260,11 +274,20 @@ class PrivilegedAccessService
                 ['company_id' => $company->id, 'note' => $note],
                 $httpRequest,
             );
+            $accessRequest->loadMissing(['targetUser', 'role']);
+            $this->recordNotification(
+                $accessRequest,
+                $company,
+                [$accessRequest->requested_by, $accessRequest->target_user_id],
+                'rejected',
+                $accessRequest->role->name,
+                $accessRequest->targetUser->name,
+                $note,
+                $httpRequest,
+            );
 
             return $accessRequest;
         });
-
-        $this->notifyDecision($accessRequest, $company, 'rejected', $note);
 
         return $accessRequest;
     }
@@ -301,6 +324,7 @@ class PrivilegedAccessService
                 'revoked_by' => $actor->id,
                 'revocation_reason' => $reason,
             ]);
+            $assignment->loadMissing(['user', 'role']);
             $this->mobileTokens->revokeAllForUser($assignment->user, 'privileged_access_revoked');
             $assignment->user->tokens()->delete();
             $this->audit->record(
@@ -310,18 +334,21 @@ class PrivilegedAccessService
                 ['company_id' => $company->id, 'reason' => $reason],
                 $httpRequest,
             );
+            $this->recordNotification(
+                $assignment,
+                $company,
+                [$assignment->user_id],
+                'revoked',
+                $assignment->role->name,
+                $assignment->user->name,
+                $reason,
+                $httpRequest,
+            );
 
             return $assignment;
         });
 
         $assignment->loadMissing(['user', 'role']);
-        $assignment->user->notify(new PrivilegedAccessNotification(
-            'revoked',
-            $assignment->role->name,
-            $company->legal_name,
-            $assignment->user->name,
-            $reason,
-        ));
 
         return $assignment;
     }
@@ -430,22 +457,50 @@ class PrivilegedAccessService
             ->get();
     }
 
-    private function notifyDecision(
-        AccessRequest $accessRequest,
+    /** @param list<string> $recipientIds */
+    private function recordNotification(
+        AccessRequest|UserRoleAssignment $aggregate,
         Company $company,
+        array $recipientIds,
         string $event,
+        string $roleName,
+        string $targetName,
         ?string $note,
+        Request $request,
     ): void {
-        $accessRequest->loadMissing(['requester', 'targetUser', 'role']);
-        Notification::send(
-            collect([$accessRequest->requester, $accessRequest->targetUser])->unique('id'),
-            new PrivilegedAccessNotification(
-                $event,
-                $accessRequest->role->name,
-                $company->legal_name,
-                $accessRequest->targetUser->name,
-                $note,
-            ),
+        $labels = [
+            'requested' => 'diajukan',
+            'approved' => 'disetujui',
+            'rejected' => 'ditolak',
+            'revoked' => 'dicabut',
+        ];
+        $aggregateType = $aggregate instanceof AccessRequest ? 'access_request' : 'user_role_assignment';
+        $body = "Akses {$roleName} untuk {$targetName} di {$company->legal_name} telah {$labels[$event]}.";
+        if ($note) {
+            $body .= ' Catatan: '.$note;
+        }
+
+        $this->outbox->record(
+            'notification.requested',
+            $aggregateType,
+            $aggregate->id,
+            [
+                'recipient_user_ids' => array_values(array_unique($recipientIds)),
+                'kind' => "identity.privileged_access.{$event}",
+                'title' => 'Perubahan privileged access',
+                'body' => $body,
+                'data' => [
+                    'aggregate_id' => $aggregate->id,
+                    'aggregate_type' => $aggregateType,
+                    'company_id' => $company->id,
+                    'event' => $event,
+                ],
+                'action_url' => null,
+                'channels' => ['inbox', 'mail'],
+            ],
+            "privileged-access:{$aggregateType}:{$aggregate->id}:{$event}",
+            $company,
+            $request,
         );
     }
 }

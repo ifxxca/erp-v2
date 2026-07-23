@@ -2,6 +2,7 @@
 
 use App\Models\FileAsset;
 use App\Modules\Identity\Application\AuditLogger;
+use App\Modules\Outbox\Application\OutboxDispatcher;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -39,3 +40,11 @@ Schedule::call(function (): void {
 })->hourly()
     ->name('files:expire-abandoned-uploads')
     ->withoutOverlapping();
+
+$outboxDispatch = Schedule::call(fn () => app(OutboxDispatcher::class)->dispatchPending());
+if (app()->environment('testing')) {
+    $outboxDispatch->everyMinute();
+} else {
+    $outboxDispatch->everyTenSeconds();
+}
+$outboxDispatch->name('outbox:dispatch-pending')->withoutOverlapping();

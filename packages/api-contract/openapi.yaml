@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.12.0
+  version: 0.13.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -372,6 +372,94 @@ paths:
           $ref: "#/components/responses/ValidationFailed"
         "429":
           description: Revoke-all rate limit exceeded.
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: List the authenticated identity's central inbox.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: company_id
+          in: query
+          schema:
+            type: string
+            pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+        - name: unread
+          in: query
+          schema:
+            type: boolean
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: User-isolated inbox with channel delivery state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /notifications/{notificationId}/read:
+    patch:
+      operationId: markNotificationRead
+      summary: Mark one notification owned by the authenticated identity as read.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/NotificationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Updated notification.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Notification is not owned by the authenticated identity.
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      summary: Mark every unread notification owned by the authenticated identity as read.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Number of notifications changed by this command.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated]
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /auth/invitations/accept:
     post:
       operationId: acceptInvitation
@@ -1412,6 +1500,13 @@ components:
       schema:
         type: integer
         minimum: 1
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
   responses:
     Unauthenticated:
       description: Authentication failed or is missing.
@@ -2628,6 +2723,65 @@ components:
           type: integer
         total:
           type: integer
+    PlatformNotification:
+      type: object
+      required: [id, company_id, kind, title, body, data, action_url, read_at, created_at, deliveries]
+      properties:
+        id:
+          type: string
+        company_id:
+          type: [string, "null"]
+        kind:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        action_url:
+          type: [string, "null"]
+          description: Relative first-party application path.
+        read_at:
+          type: [string, "null"]
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        deliveries:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [pending, processing, delivered, dead_letter]
+    NotificationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/PlatformNotification"
+    NotificationPage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformNotification"
+        meta:
+          type: object
+          required: [current_page, last_page, per_page, total, unread_count]
+          properties:
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+            unread_count:
+              type: integer
     Error:
       type: object
       required: [message, code, request_id]
