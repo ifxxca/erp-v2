@@ -12,6 +12,8 @@ class FileAsset extends Model
 
     protected $table = 'files';
 
+    protected $hidden = ['disk', 'object_key'];
+
     protected $fillable = [
         'id',
         'company_id',

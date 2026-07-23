@@ -209,7 +209,12 @@ class FleetMaintenanceController extends Controller
         $this->assertTripVisibleTo($request, $trip);
 
         return response()->json(['data' => $trip->load([
-            'vehicle.type:id,code,name', 'driver:id,name,email', 'checklist.template.items', 'checklist.answers.item',
+            'vehicle.type:id,code,name', 'driver:id,name,email', 'checklist.template.items',
+            'checklist.answers.item',
+            'checklist.answers.evidenceFiles' => fn ($query) => $query->select([
+                'id', 'attached_id', 'original_name', 'declared_mime_type', 'detected_mime_type',
+                'expected_size', 'actual_size', 'status', 'scan_status', 'created_at',
+            ]),
         ])]);
     }
 

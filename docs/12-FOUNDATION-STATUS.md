@@ -49,6 +49,7 @@ Status date: 2026-07-23
 - Versioned pre-departure checklist, guarded driver checkout/check-in/cancellation, single-active-trip constraints, monotonic odometer, synchronized vehicle state, and audited trip history.
 - Location-scoped `ops-driver` and Fleet Manager trip capabilities with driver-only list/check-in boundaries outside management access.
 - Mantine Operations Web daily-operations workspace with checklist checkout, odometer check-in, and manager cancellation controls.
+- Optional scanned checklist evidence attachment with driver/company ownership checks, atomic answer binding, safe metadata projection, and orphan expiry.
 - React 19/TypeScript/Vite Management ERP identity workspace plus functional Operations Web Fleet/Maintenance pilot.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
@@ -64,7 +65,7 @@ Status date: 2026-07-23
 
 ## Verified locally
 
-- API test suite: 126 tests, 761 assertions.
+- API test suite: 126 tests, 774 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -83,7 +84,7 @@ Status date: 2026-07-23
 - Identity directory scope/cross-company isolation, HR organization scheduling, invalid-scope and schedule-conflict denial, global-status boundaries, reactivation eligibility, and session revocation.
 - ERP and Operations production builds.
 - Web lint.
-- PostgreSQL 18 clean migration + FoundationSeeder and the full API suite (126 tests, 761 assertions) on PHP 8.5.
+- PostgreSQL 18 clean migration + FoundationSeeder and the full API suite (126 tests, 774 assertions) on PHP 8.5.
 - Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including invitation, TOTP enrollment, recovery-code presentation, mandatory MFA re-entry, session revocation, privileged request/approval/revocation, standard scoped assignment/revocation/self-action guard, system-role inspection, and the full custom-role create/edit/permission-sync/delete lifecycle.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
 - Composer strict validation.
@@ -98,7 +99,7 @@ Local Compose is verified with PostgreSQL 18, PHP 8.5 API, Redis, MinIO, ClamAV,
 
 - OpenAPI generated clients.
 - Production collector/dashboard/alert routing, telemetry retention/access policy, and distributed tracing integration.
-- Fleet documents, service due schedule, fuel/pickup events, route/geolocation, checklist evidence policy, parts/inventory boundary, vendor billing, and maintenance approval workflow.
+- Fleet documents, service due schedule, fuel/pickup events, route/geolocation, mandatory checklist-evidence policy, parts/inventory boundary, vendor billing, and maintenance approval workflow.
 - Flutter mobile application.
 
 The mobile token lifecycle is implemented, but production deployment still requires PostgreSQL/container verification and mobile OS secure-storage integration.

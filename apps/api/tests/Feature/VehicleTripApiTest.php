@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ChecklistTemplate;
 use App\Models\Company;
+use App\Models\FileAsset;
 use App\Models\Location;
 use App\Models\Permission;
 use App\Models\Role;
@@ -26,18 +27,24 @@ class VehicleTripApiTest extends TestCase
         [$company, $location, $driver] = $this->actor(['fleet.trip.view', 'fleet.trip.operate']);
         $template = $this->template($company);
         $vehicle = $this->vehicle($company, $location, $driver);
+        $evidence = $this->evidence($company, $driver);
         Sanctum::actingAs($driver);
+
+        $answers = $this->answers($template);
+        $answers[0]['evidence_file_ids'] = [$evidence->id];
 
         $created = $this->postJson($this->base($company, $location).'/fleet/trips/checkout', [
             'vehicle_id' => $vehicle->id,
             'purpose' => 'Delivery retail route A',
             'destination' => 'Tangerang',
             'start_odometer' => 1010,
-            'answers' => $this->answers($template),
+            'answers' => $answers,
         ])->assertCreated()
             ->assertJsonPath('data.status', 'active')
             ->assertJsonPath('data.driver.id', $driver->id)
-            ->assertJsonCount(6, 'data.checklist.answers');
+            ->assertJsonCount(6, 'data.checklist.answers')
+            ->assertJsonPath('data.checklist.answers.0.evidence_files.0.id', $evidence->id)
+            ->assertJsonMissingPath('data.checklist.answers.0.evidence_files.0.object_key');
         $tripId = $created->json('data.id');
 
         $this->assertDatabaseHas('vehicles', [
@@ -46,6 +53,10 @@ class VehicleTripApiTest extends TestCase
             'current_odometer' => 1010,
         ]);
         $this->assertDatabaseHas('audit_logs', ['event' => 'fleet.vehicle_checked_out', 'subject_id' => $tripId]);
+        $this->assertDatabaseHas('files', [
+            'id' => $evidence->id,
+            'attached_type' => 'checklist_answer',
+        ]);
 
         $this->postJson($this->base($company, $location)."/fleet/trips/{$tripId}/check-in", [
             'end_odometer' => 1075,
@@ -99,8 +110,32 @@ class VehicleTripApiTest extends TestCase
             ->assertConflict()
             ->assertJsonPath('code', 'VEHICLE_ODOMETER_REGRESSION');
 
+        $unscanned = $this->evidence($company, $driver, 'quarantined');
+        $withUnscannedEvidence = $payload;
+        $withUnscannedEvidence['answers'][0]['evidence_file_ids'] = [$unscanned->id];
+        $this->postJson($url, $withUnscannedEvidence)
+            ->assertConflict()
+            ->assertJsonPath('code', 'CHECKLIST_EVIDENCE_NOT_READY');
+
+        $wrongPurpose = $this->evidence($company, $driver);
+        $wrongPurpose->update(['purpose' => 'work_order_attachment']);
+        $withWrongPurpose = $payload;
+        $withWrongPurpose['answers'][0]['evidence_file_ids'] = [$wrongPurpose->id];
+        $this->postJson($url, $withWrongPurpose)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'CHECKLIST_EVIDENCE_INVALID');
+
+        $duplicate = $this->evidence($company, $driver);
+        $withDuplicateEvidence = $payload;
+        $withDuplicateEvidence['answers'][0]['evidence_file_ids'] = [$duplicate->id];
+        $withDuplicateEvidence['answers'][1]['evidence_file_ids'] = [$duplicate->id];
+        $this->postJson($url, $withDuplicateEvidence)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'VALIDATION_FAILED');
+
         $this->assertDatabaseCount('vehicle_trips', 0);
         $this->assertDatabaseHas('vehicles', ['id' => $vehicle->id, 'operational_status' => 'available', 'current_odometer' => 1000]);
+        $this->assertDatabaseHas('files', ['id' => $unscanned->id, 'attached_id' => null]);
     }
 
     public function test_active_trip_guards_driver_and_vehicle_and_manager_can_cancel(): void
@@ -251,6 +286,31 @@ class VehicleTripApiTest extends TestCase
             'result' => 'pass',
             'note' => null,
         ])->all();
+    }
+
+    private function evidence(Company $company, User $creator, string $status = 'ready'): FileAsset
+    {
+        $checksum = hash('sha256', 'checklist evidence');
+
+        return FileAsset::query()->create([
+            'company_id' => $company->id,
+            'created_by' => $creator->id,
+            'purpose' => 'checklist_evidence',
+            'original_name' => 'vehicle-front.jpg',
+            'disk' => 'local',
+            'object_key' => "companies/{$company->id}/files/".str()->ulid(),
+            'declared_mime_type' => 'image/jpeg',
+            'detected_mime_type' => 'image/jpeg',
+            'expected_size' => 18,
+            'actual_size' => 18,
+            'expected_checksum_sha256' => $checksum,
+            'actual_checksum_sha256' => $checksum,
+            'status' => $status,
+            'scan_status' => $status === 'ready' ? 'clean' : 'pending',
+            'pending_expires_at' => now()->addDay(),
+            'uploaded_at' => now(),
+            'finalized_at' => $status === 'ready' ? now() : null,
+        ]);
     }
 
     private function vehicle(

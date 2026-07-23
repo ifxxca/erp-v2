@@ -36,6 +36,65 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, tok
   return payload as T
 }
 
+async function apiMultipart<T>(path: string, form: FormData, token: string): Promise<T> {
+  const headers = new Headers({ Accept: 'application/json', Authorization: `Bearer ${token}` })
+  const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers, body: form })
+  const payload = await response.json().catch(() => ({})) as ErrorPayload
+  if (!response.ok) throw new ApiError(response.status, payload.code ?? 'UPLOAD_FAILED', payload.message ?? 'Upload gagal.', payload.errors, payload.request_id)
+  return payload as T
+}
+
+export type FileAsset = {
+  id: string; original_name: string; status: string; scan_status: string; rejection_reason: string | null
+}
+
+export async function uploadChecklistEvidence(companyId: string, file: File, token: string): Promise<FileAsset> {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))
+  const checksum = Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('')
+  const initiated = await apiRequest<{ data: FileAsset; upload: { url: string } }>(`/companies/${companyId}/files`, {
+    method: 'POST',
+    body: JSON.stringify({
+      purpose: 'checklist_evidence', original_name: file.name, mime_type: file.type,
+      size: file.size, checksum_sha256: checksum,
+    }),
+  }, token)
+  const uploadPath = initiated.upload.url.replace(/^\/api\/v1/, '')
+  const form = new FormData()
+  form.set('file', file)
+  await apiMultipart(uploadPath, form, token)
+  let asset = (await apiRequest<{ data: FileAsset }>(`/companies/${companyId}/files/${initiated.data.id}/finalize`, {
+    method: 'POST',
+  }, token)).data
+
+  for (let attempt = 0; attempt < 40 && ['quarantined', 'uploaded'].includes(asset.status); attempt += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 500))
+    asset = (await apiRequest<{ data: FileAsset }>(`/companies/${companyId}/files/${asset.id}`, {}, token)).data
+  }
+  if (asset.status !== 'ready') {
+    throw new ApiError(409, 'CHECKLIST_EVIDENCE_NOT_READY', asset.rejection_reason ?? 'Evidence belum lolos pemeriksaan keamanan.')
+  }
+
+  return asset
+}
+
+export async function downloadEvidence(companyId: string, file: FileAsset, token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/companies/${companyId}/files/${file.id}/download`, {
+    headers: { Accept: 'application/octet-stream', Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as ErrorPayload
+    throw new ApiError(response.status, payload.code ?? 'DOWNLOAD_FAILED', payload.message ?? 'Evidence tidak dapat diunduh.')
+  }
+  const url = URL.createObjectURL(await response.blob())
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = file.original_name
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export type LoginResponse = { access_token: string; mfa_required: boolean }
 export type OperationsContext = {
   company: { id: string; code: string; legal_name: string }
@@ -71,5 +130,11 @@ export type VehicleTrip = {
   id: string; status: string; purpose: string; destination: string | null
   start_odometer: number; end_odometer: number | null; departed_at: string; arrived_at: string | null
   cancel_reason: string | null; vehicle: Vehicle; driver: { id: string; name: string; email: string }
+  checklist?: {
+    submitted_at: string
+    answers: Array<{
+      id: string; result: string; note: string | null; item: ChecklistItem; evidence_files: FileAsset[]
+    }>
+  }
 }
 export type Page<T> = { data: T[]; current_page: number; last_page: number; total: number }

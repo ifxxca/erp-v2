@@ -9,7 +9,7 @@ Dokumen ini menetapkan vertical slice kedua pilot Fleet: checklist sebelum beran
 - `ops-driver` adalah role lokasi untuk melihat kendaraan, mengambil checklist aktif, melihat trip miliknya, checkout, dan check-in.
 - `fleet-manager` melihat seluruh trip lokasi, dapat menjalankan operasi pilot, dan dapat membatalkan trip aktif dengan alasan.
 - Driver checkout sebagai identity yang sedang login. Dispatch kendaraan kepada identity lain sengaja belum dibuka agar assignment tidak dapat dipalsukan oleh client.
-- Checklist evidence file, fuel event, pickup/delivery event, route planning, dan offline synchronization belum menjadi bagian increment ini.
+- Checklist evidence file bersifat opsional sampai owner menetapkan policy wajib. Fuel event, pickup/delivery event, route planning, dan offline synchronization belum menjadi bagian increment ini.
 
 ## Model fisik
 
@@ -66,6 +66,18 @@ Semua mutation berada dalam satu transaksi database dan menulis audit serta vehi
 
 Mutation tetap dilindungi request correlation dan idempotency middleware. Resource company/location divalidasi ulang di controller/service, bukan hanya mengandalkan ULID dari client.
 
+## Evidence checklist
+
+Setiap jawaban dapat membawa maksimum tiga `evidence_file_ids`. Binary harus lebih dahulu melewati private-file initiate/upload/finalize flow. Checkout hanya menerima file yang:
+
+- berada pada legal entity yang sama;
+- diunggah oleh driver yang melakukan checkout;
+- memakai purpose `checklist_evidence`;
+- berstatus `ready` setelah malware scan;
+- belum attached ke domain record lain.
+
+Attachment file ke checklist answer, pembuatan trip, dan perubahan status kendaraan terjadi dalam transaksi yang sama. File yang sudah ready tetapi tidak pernah attached akan di-expire setelah reservation window agar retry/upload yang ditinggalkan tidak menjadi orphan permanen. Response trip hanya menampilkan metadata evidence aman dan tidak pernah mengekspos disk atau object-storage key.
+
 ## Mobile readiness
 
 Payload tidak bergantung pada HTML atau session browser. Mobile login/refresh-token family yang sudah ada dapat memanggil endpoint yang sama dengan bearer token. Langkah mobile berikutnya adalah secure storage, local draft checklist, upload evidence, dan idempotent retry queue. Offline checkout final belum boleh dilakukan sebelum policy konflik waktu, odometer, dan vehicle availability ditetapkan; draft offline boleh disiapkan, tetapi server tetap menjadi authority saat submit.
@@ -73,15 +85,15 @@ Payload tidak bergantung pada HTML atau session browser. Mobile login/refresh-to
 ## Acceptance evidence
 
 - SQLite feature tests mencakup lifecycle sukses, required/critical checklist, odometer regression, active driver conflict, cancellation, audit, dan pelepasan active keys.
-- PostgreSQL 18 menjalankan clean migration + seeder dan seluruh API suite: 126 test, 761 assertion, PHP 8.5.
-- Operations Web Mantine mempunyai tab operasional harian, checklist checkout, check-in, dan manager cancellation.
-- OpenAPI `0.16.0` mendeskripsikan enam endpoint dan schema trip/checklist.
+- PostgreSQL 18 menjalankan clean migration + seeder dan seluruh API suite: 126 test, 774 assertion, PHP 8.5.
+- Operations Web Mantine mempunyai tab operasional harian, upload evidence yang menunggu hasil scan, checklist checkout, check-in, dan manager cancellation.
+- OpenAPI `0.17.0` mendeskripsikan enam endpoint, schema trip/checklist, dan evidence attachment.
 
 ## Deferred owner decisions
 
 - apakah item non-kritis `fail` boleh berangkat dengan acknowledgement supervisor;
 - item checklist final per tipe kendaraan dan version-publishing workflow;
-- evidence foto wajib per item/exception;
+- kapan evidence foto menjadi wajib per item/exception (dukungan attachment opsional sudah tersedia);
 - dispatch driver oleh Fleet/Delivery coordinator;
 - tolerance timestamp dan kebijakan offline conflict pada mobile;
 - kapan fuel, pickup/delivery, route, dan geolocation menjadi event di dalam trip.

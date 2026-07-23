@@ -20,7 +20,14 @@ Schedule::call(fn () => DB::table('idempotency_keys')->where('expires_at', '<', 
 
 $expireAbandonedFiles = function (): void {
     FileAsset::query()
-        ->whereIn('status', ['pending', 'uploaded'])
+        ->where(function ($query): void {
+            $query->whereIn('status', ['pending', 'uploaded'])
+                ->orWhere(function ($query): void {
+                    $query->where('status', 'ready')
+                        ->where('purpose', 'checklist_evidence')
+                        ->whereNull('attached_id');
+                });
+        })
         ->where('pending_expires_at', '<', now())
         ->chunkById(100, function ($files): void {
             foreach ($files as $file) {

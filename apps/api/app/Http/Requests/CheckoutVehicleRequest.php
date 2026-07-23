@@ -24,6 +24,8 @@ class CheckoutVehicleRequest extends FormRequest
             'answers.*.item_id' => ['required', 'ulid', 'distinct'],
             'answers.*.result' => ['required', Rule::in(['pass', 'fail', 'not_applicable'])],
             'answers.*.note' => ['nullable', 'string', 'max:1000'],
+            'answers.*.evidence_file_ids' => ['nullable', 'array', 'max:3'],
+            'answers.*.evidence_file_ids.*' => ['required', 'ulid', 'distinct'],
         ];
     }
 }

@@ -208,11 +208,24 @@ class FileApiTest extends TestCase
         Storage::disk('local')->put($asset->object_key, $content);
         $asset->forceFill(['pending_expires_at' => now()->subMinute()])->save();
 
+        $orphanId = $this->initiate($company, "%PDF-1.7\nOrphaned ready evidence")->json('data.id');
+        $orphan = FileAsset::query()->findOrFail($orphanId);
+        Storage::disk('local')->put($orphan->object_key, "%PDF-1.7\nOrphaned ready evidence");
+        $orphan->forceFill([
+            'status' => 'ready',
+            'scan_status' => 'clean',
+            'pending_expires_at' => now()->subMinute(),
+            'finalized_at' => now(),
+        ])->save();
+
         Artisan::call('files:expire-abandoned');
 
         Storage::disk('local')->assertMissing($asset->object_key);
         $this->assertDatabaseHas('files', ['id' => $fileId, 'status' => 'expired']);
+        Storage::disk('local')->assertMissing($orphan->object_key);
+        $this->assertDatabaseHas('files', ['id' => $orphanId, 'status' => 'expired']);
         $this->assertDatabaseHas('audit_logs', ['event' => 'file.expired', 'subject_id' => $fileId]);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'file.expired', 'subject_id' => $orphanId]);
     }
 
     private function initiate(Company $company, string $content)

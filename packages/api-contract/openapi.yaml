@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.16.0
+  version: 0.17.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -2095,15 +2095,37 @@ components:
         item_id: { type: string }
         result: { type: string, enum: [pass, fail, not_applicable] }
         note: { type: [string, "null"], maxLength: 1000 }
+        evidence_file_ids:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          items: { type: string }
+    ChecklistEvidence:
+      type: object
+      required: [id, attached_id, original_name, status, scan_status]
+      properties:
+        id: { type: string }
+        attached_id: { type: string }
+        original_name: { type: string }
+        declared_mime_type: { type: string }
+        detected_mime_type: { type: [string, "null"] }
+        expected_size: { type: integer }
+        actual_size: { type: [integer, "null"] }
+        status: { const: ready }
+        scan_status: { type: string, enum: [clean, skipped] }
+        created_at: { type: string, format: date-time }
     ChecklistAnswer:
       type: object
-      required: [id, checklist_template_item_id, result, item]
+      required: [id, checklist_template_item_id, result, item, evidence_files]
       properties:
         id: { type: string }
         checklist_template_item_id: { type: string }
         result: { type: string, enum: [pass, fail, not_applicable] }
         note: { type: [string, "null"] }
         item: { $ref: "#/components/schemas/ChecklistTemplateItem" }
+        evidence_files:
+          type: array
+          items: { $ref: "#/components/schemas/ChecklistEvidence" }
     ChecklistSubmission:
       type: object
       required: [id, checklist_template_id, submitted_by, submitted_at, template, answers]

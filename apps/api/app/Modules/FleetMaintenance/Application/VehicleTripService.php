@@ -4,6 +4,7 @@ namespace App\Modules\FleetMaintenance\Application;
 
 use App\Models\ChecklistTemplate;
 use App\Models\Company;
+use App\Models\FileAsset;
 use App\Models\Location;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -87,6 +88,34 @@ class VehicleTripService
                         'CHECKLIST_ITEM_INVALID',
                     );
                 }
+                $evidenceIds = $answers->flatMap(
+                    fn (array $answer): array => $answer['evidence_file_ids'] ?? [],
+                );
+                if ($evidenceIds->count() !== $evidenceIds->unique()->count()) {
+                    throw new FleetMaintenanceException(
+                        'A checklist evidence file may only be attached to one answer.',
+                        'CHECKLIST_EVIDENCE_DUPLICATE',
+                    );
+                }
+                $evidence = FileAsset::query()->lockForUpdate()->whereIn('id', $evidenceIds)->get()->keyBy('id');
+                if ($evidence->count() !== $evidenceIds->count() || $evidence->contains(
+                    fn (FileAsset $file): bool => $file->company_id !== $company->id
+                        || $file->created_by !== $actor->id
+                        || $file->purpose !== 'checklist_evidence'
+                        || $file->attached_id !== null,
+                )) {
+                    throw new FleetMaintenanceException(
+                        'Checklist evidence must be an unattached file uploaded by the current driver for this company.',
+                        'CHECKLIST_EVIDENCE_INVALID',
+                    );
+                }
+                if ($evidence->contains(fn (FileAsset $file): bool => $file->status !== 'ready')) {
+                    throw new FleetMaintenanceException(
+                        'Checklist evidence is still being scanned or was rejected.',
+                        'CHECKLIST_EVIDENCE_NOT_READY',
+                        409,
+                    );
+                }
                 $criticalFailure = $template->items->where('is_critical', true)->first(
                     fn ($item): bool => ($answers->get($item->id)['result'] ?? null) !== 'pass',
                 );
@@ -119,11 +148,18 @@ class VehicleTripService
                 ]);
                 foreach ($template->items as $item) {
                     if ($answer = $answers->get($item->id)) {
-                        $submission->answers()->create([
+                        $answerRecord = $submission->answers()->create([
                             'checklist_template_item_id' => $item->id,
                             'result' => $answer['result'],
                             'note' => $answer['note'] ?? null,
                         ]);
+                        foreach ($answer['evidence_file_ids'] ?? [] as $fileId) {
+                            $evidence->get($fileId)->forceFill([
+                                'attached_type' => 'checklist_answer',
+                                'attached_id' => $answerRecord->id,
+                                'attached_at' => now(),
+                            ])->save();
+                        }
                     }
                 }
 
@@ -135,6 +171,7 @@ class VehicleTripService
                     'vehicle_id' => $vehicle->id,
                     'start_odometer' => (int) $attributes['start_odometer'],
                     'checklist_template_id' => $template->id,
+                    'evidence_count' => $evidenceIds->count(),
                 ], $request);
 
                 return $this->load($trip);
@@ -256,6 +293,10 @@ class VehicleTripService
             'driver:id,name,email',
             'checklist.template.items',
             'checklist.answers.item',
+            'checklist.answers.evidenceFiles' => fn ($query) => $query->select([
+                'id', 'attached_id', 'original_name', 'declared_mime_type', 'detected_mime_type',
+                'expected_size', 'actual_size', 'status', 'scan_status', 'created_at',
+            ]),
         ]);
     }
 }

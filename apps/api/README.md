@@ -105,7 +105,7 @@ Token idle timeout is enforced before Sanctum updates `last_used_at`: ERP Web 30
 
 Mobile refresh tokens are stored server-side only as SHA-256 hashes, rotate on every use, and retain their consumed history for replay detection. Rotation does not extend the 30-day family expiry. Mobile clients must transmit them only over TLS and keep them in platform-protected secure storage, never ordinary preferences or logs.
 
-The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.16.0).
+The canonical payload and response definitions are in `packages/api-contract/openapi.yaml` (version 0.17.0).
 
 ## Verification
 
