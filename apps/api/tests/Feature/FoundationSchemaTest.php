@@ -38,6 +38,9 @@ class FoundationSchemaTest extends TestCase
             'mobile_refresh_token_families',
             'mobile_refresh_tokens',
             'files',
+            'document_sequence_rules',
+            'document_sequences',
+            'document_number_allocations',
         ];
 
         foreach ($expectedTables as $table) {

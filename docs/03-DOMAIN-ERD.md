@@ -691,6 +691,47 @@ erDiagram
 | `comments` | Percakapan polymorphic bila domain mengizinkan |
 | `audit_logs` | Jejak perubahan immutable untuk operasi sensitif |
 
+### Document numbering
+
+```mermaid
+erDiagram
+    COMPANIES ||--o{ DOCUMENT_SEQUENCE_RULES : configures
+    LOCATIONS o|--o{ DOCUMENT_SEQUENCE_RULES : overrides
+    DOCUMENT_SEQUENCE_RULES ||--o{ DOCUMENT_SEQUENCES : counts
+    DOCUMENT_SEQUENCE_RULES ||--o{ DOCUMENT_NUMBER_ALLOCATIONS : issues
+
+    DOCUMENT_SEQUENCE_RULES {
+        ulid id PK
+        ulid company_id FK
+        ulid location_id FK
+        string document_type
+        int version
+        string pattern
+        string period
+        date effective_from
+        date effective_until
+    }
+    DOCUMENT_SEQUENCES {
+        ulid id PK
+        ulid rule_id FK
+        string period_key
+        bigint last_value
+    }
+    DOCUMENT_NUMBER_ALLOCATIONS {
+        ulid id PK
+        ulid company_id FK
+        ulid rule_id FK
+        int rule_version
+        string subject_type
+        ulid subject_id
+        string document_number UK
+        bigint sequence_value
+        date document_date
+    }
+```
+
+Allocation hanya boleh dipanggil dari transaksi aggregate pemilik. Unique counter adalah `rule_id + period_key`; unique subject adalah `company_id + document_type + subject_type + subject_id`. Rollback tidak menghabiskan nomor, sedangkan nomor dokumen yang sudah commit tidak didaur ulang. Rule location mengoverride rule global company dan format aktual tetap menunggu Q-207.
+
 ### File lifecycle
 
 ```mermaid

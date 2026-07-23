@@ -33,6 +33,10 @@ Authenticated business mutations accept an optional `Idempotency-Key` containing
 
 The Compose stack creates the private MinIO bucket, runs a Redis queue worker, and scans with ClamAV. Production must keep `FILES_ALLOW_UNSCANNED=false`. The test-only skipped scanner records `scan_status=skipped`, never `clean`. Abandoned reservations expire after 24 hours. Legal retention remains unset until a domain attaches the file and Q-206 defines the policy.
 
+## Internal document numbering
+
+`DocumentNumberService` allocates document numbers only inside the owning domain transaction; there is intentionally no generic API endpoint. Rules are company-scoped with optional location override, effective-dated versions, controlled placeholders, timezone-aware period reset, and an atomic `rule + period` counter. A repeated subject returns its existing allocation, while transaction rollback also rolls back the counter and audit record. Actual Fleet/Maintenance patterns remain unseeded until Q-207 is approved.
+
 ## Identity endpoints
 
 - `POST /auth/login` issues an expiring bearer token; mobile login also starts one 30-day device-bound refresh family.

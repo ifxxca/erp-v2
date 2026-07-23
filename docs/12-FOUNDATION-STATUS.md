@@ -32,6 +32,7 @@ Status date: 2026-07-22
 - Database-backed, identity-scoped mutation idempotency with canonical request fingerprints, atomic acquisition, exact response replay, in-progress/mismatch conflicts, failure recovery, retention cleanup, and hashed client keys.
 - Company-scoped private file lifecycle with initiate/upload/finalize separation, owner enforcement, exact size/SHA-256 validation, MIME/signature allowlist, quarantine, asynchronous ClamAV scanning, authorized streaming download, tombstoned deletion, abandoned-upload cleanup, and append-only audit.
 - S3-compatible MinIO bucket initialization plus a Redis queue worker and ClamAV service in local Compose; unscanned mode is explicit, non-production-only, and never represented as clean.
+- Internal atomic document-number service with company/location rule resolution, effective-dated versions, controlled placeholders, timezone-aware period reset, database upsert counters, subject-idempotent allocation, rollback safety, and transactional audit.
 - React 19/TypeScript/Vite Management ERP identity workspace plus Operations Web scaffold.
 - Responsive ERP login, MFA challenge, legal-entity directory, identity detail, organization scheduling, and guarded global-status controls.
 - Responsive ERP Privileged Access Review workspace for request, approve, reject, and immediate revoke flows.
@@ -47,7 +48,7 @@ Status date: 2026-07-22
 
 ## Verified locally
 
-- API test suite: 95 tests, 557 assertions.
+- API test suite: 104 tests, 599 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -57,6 +58,7 @@ Status date: 2026-07-22
 - Standard-access catalog isolation, privileged/global-role exclusion, company/department/location coverage, overlap denial, self-action/MFA gates, history, revocation, and scheduled-role classification protection.
 - Request-ID preservation/generation, correlated framework errors and audit records, canonical JSON replay without duplicate side effects, payload-mismatch denial, in-progress retry signaling, and failed-response recovery.
 - File checksum/signature rejection, upload ownership, company isolation, quarantine/scan state, infected-object removal, authorized download, deletion tombstone, and audit evidence.
+- Document-number transaction guard, sequential allocation, subject replay, rollback reuse, monthly reset, location override/global fallback, company isolation, unsafe-pattern denial, and audit evidence.
 - Encrypted TOTP enrollment, code replay denial, token-isolated assurance, recovery-code rotation/reuse denial, and mandatory-privileged-MFA behavior.
 - Password-reset non-enumeration/replay denial, cross-user session isolation, revoke-all confirmation, and ERP/OPS idle-timeout behavior.
 - Mobile refresh hashing, rotation lineage, fixed absolute expiry, access-token replacement, cross-device isolation, ineligible-identity denial, and family revocation on replay/session revoke.
@@ -76,7 +78,7 @@ PostgreSQL migration and PHP 8.5 container execution could not be run locally be
 ## Intentionally not implemented yet
 
 - OpenAPI generated clients.
-- Remaining shared-platform foundations: document sequence, transactional outbox/notification worker, and production observability.
+- Remaining shared-platform foundations: transactional outbox/notification worker and production observability.
 - Fleet/Maintenance domain migrations and flows.
 - Flutter mobile application.
 
