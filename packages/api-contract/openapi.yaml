@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.15.0
+  version: 0.16.0
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -1620,6 +1620,137 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/fleet/checklist-template:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+    get:
+      operationId: getActiveVehicleChecklistTemplate
+      summary: Get the latest active pre-departure checklist for a company location.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Active checklist template and ordered items.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/ChecklistTemplate" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: No active checklist template is configured. }
+  /companies/{companyId}/locations/{locationId}/fleet/trips:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+    get:
+      operationId: listVehicleTrips
+      summary: List location trips; non-managers receive only their own trips.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/VehicleTripStatus" } }
+      responses:
+        "200":
+          description: Paginated vehicle trips.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VehicleTripPage" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /companies/{companyId}/locations/{locationId}/fleet/trips/checkout:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      operationId: checkoutVehicle
+      summary: Atomically submit the pre-departure checklist and start a vehicle trip for the current driver.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutVehicleRequest" }
+      responses:
+        "201":
+          description: Trip started and vehicle changed to in use.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/VehicleTrip" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/fleet/trips/{vehicleTripId}:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/VehicleTripId" }
+    get:
+      operationId: getVehicleTrip
+      summary: Get one scoped trip with its submitted checklist.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Vehicle trip detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/VehicleTrip" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Trip is outside the requested scope or does not exist. }
+  /companies/{companyId}/locations/{locationId}/fleet/trips/{vehicleTripId}/check-in:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/VehicleTripId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      operationId: checkInVehicle
+      summary: Complete an active trip, advance odometer, and return the vehicle to available.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckInVehicleRequest" }
+      responses:
+        "200":
+          description: Trip completed and vehicle released.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/VehicleTrip" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+  /companies/{companyId}/locations/{locationId}/fleet/trips/{vehicleTripId}/cancel:
+    parameters:
+      - { $ref: "#/components/parameters/CompanyId" }
+      - { $ref: "#/components/parameters/LocationId" }
+      - { $ref: "#/components/parameters/VehicleTripId" }
+      - { $ref: "#/components/parameters/IdempotencyKey" }
+    post:
+      operationId: cancelVehicleTrip
+      summary: Cancel an active trip as a location Fleet Manager and release the vehicle.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CancelVehicleTripRequest" }
+      responses:
+        "200":
+          description: Trip cancelled and vehicle released.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/VehicleTrip" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
   /companies/{companyId}/locations/{locationId}/maintenance/work-orders:
     parameters:
       - { $ref: "#/components/parameters/CompanyId" }
@@ -1762,6 +1893,11 @@ components:
       schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }
     WorkOrderId:
       name: workOrderId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }
+    VehicleTripId:
+      name: vehicleTripId
       in: path
       required: true
       schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{26}$" }
@@ -1925,6 +2061,107 @@ components:
       required: [data, current_page, last_page, total]
       properties:
         data: { type: array, items: { $ref: "#/components/schemas/Vehicle" } }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        total: { type: integer }
+    VehicleTripStatus:
+      type: string
+      enum: [active, completed, cancelled]
+    ChecklistTemplateItem:
+      type: object
+      required: [id, line_number, code, label, is_required, is_critical]
+      properties:
+        id: { type: string }
+        line_number: { type: integer, minimum: 1 }
+        code: { type: string }
+        label: { type: string }
+        is_required: { type: boolean }
+        is_critical: { type: boolean }
+    ChecklistTemplate:
+      type: object
+      required: [id, company_id, code, name, version, status, items]
+      properties:
+        id: { type: string }
+        company_id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        version: { type: integer, minimum: 1 }
+        status: { type: string, enum: [draft, active, retired] }
+        items: { type: array, items: { $ref: "#/components/schemas/ChecklistTemplateItem" } }
+    ChecklistAnswerInput:
+      type: object
+      required: [item_id, result]
+      properties:
+        item_id: { type: string }
+        result: { type: string, enum: [pass, fail, not_applicable] }
+        note: { type: [string, "null"], maxLength: 1000 }
+    ChecklistAnswer:
+      type: object
+      required: [id, checklist_template_item_id, result, item]
+      properties:
+        id: { type: string }
+        checklist_template_item_id: { type: string }
+        result: { type: string, enum: [pass, fail, not_applicable] }
+        note: { type: [string, "null"] }
+        item: { $ref: "#/components/schemas/ChecklistTemplateItem" }
+    ChecklistSubmission:
+      type: object
+      required: [id, checklist_template_id, submitted_by, submitted_at, template, answers]
+      properties:
+        id: { type: string }
+        checklist_template_id: { type: string }
+        submitted_by: { type: string }
+        submitted_at: { type: string, format: date-time }
+        template: { $ref: "#/components/schemas/ChecklistTemplate" }
+        answers: { type: array, items: { $ref: "#/components/schemas/ChecklistAnswer" } }
+    VehicleTrip:
+      type: object
+      required: [id, status, purpose, start_odometer, departed_at, vehicle, driver]
+      properties:
+        id: { type: string }
+        status: { $ref: "#/components/schemas/VehicleTripStatus" }
+        purpose: { type: string }
+        destination: { type: [string, "null"] }
+        start_odometer: { type: integer, minimum: 0 }
+        end_odometer: { type: [integer, "null"], minimum: 0 }
+        departed_at: { type: string, format: date-time }
+        arrived_at: { type: [string, "null"], format: date-time }
+        cancelled_at: { type: [string, "null"], format: date-time }
+        completion_note: { type: [string, "null"] }
+        cancel_reason: { type: [string, "null"] }
+        vehicle: { $ref: "#/components/schemas/Vehicle" }
+        driver: { $ref: "#/components/schemas/UserSummary" }
+        checklist: { $ref: "#/components/schemas/ChecklistSubmission" }
+    CheckoutVehicleRequest:
+      type: object
+      required: [vehicle_id, purpose, start_odometer, answers]
+      properties:
+        vehicle_id: { type: string }
+        purpose: { type: string, maxLength: 255 }
+        destination: { type: [string, "null"], maxLength: 255 }
+        start_odometer: { type: integer, minimum: 0 }
+        departed_at: { type: string, format: date-time }
+        answers:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ChecklistAnswerInput" }
+    CheckInVehicleRequest:
+      type: object
+      required: [end_odometer]
+      properties:
+        end_odometer: { type: integer, minimum: 0 }
+        arrived_at: { type: string, format: date-time }
+        note: { type: [string, "null"], maxLength: 2000 }
+    CancelVehicleTripRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 5, maxLength: 2000 }
+    VehicleTripPage:
+      type: object
+      required: [data, current_page, last_page, total]
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/VehicleTrip" } }
         current_page: { type: integer }
         last_page: { type: integer }
         total: { type: integer }

@@ -63,8 +63,8 @@ class FoundationSchemaTest extends TestCase
 
         $this->assertSame(2, Company::query()->count());
         $this->assertSame(16, Department::query()->count());
-        $this->assertSame(8, Role::query()->count());
-        $this->assertSame(20, Permission::query()->count());
+        $this->assertSame(9, Role::query()->count());
+        $this->assertSame(23, Permission::query()->count());
         $this->assertSame('global', Role::query()->where('code', 'platform-admin')->value('assignment_scope'));
         $this->assertSame('company', Role::query()->where('code', 'hr-administrator')->value('assignment_scope'));
     }

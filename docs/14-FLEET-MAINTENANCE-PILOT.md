@@ -2,7 +2,7 @@
 
 Status date: 2026-07-23
 
-Dokumen ini mencatat vertical slice pertama untuk pilot RKS / Warehouse Kresek. Kebijakan di sini sengaja lebih sempit daripada seluruh target Fleet pada PRD: vehicle master, status history, dan maintenance work order. Trip, checklist, fuel, document renewal, part inventory, vendor billing, serta service schedule belum masuk increment ini.
+Dokumen ini mencatat vertical slice pertama untuk pilot RKS / Warehouse Kresek: vehicle master, status history, dan maintenance work order. Trip/checklist/odometer telah dilanjutkan pada [15-DAILY-VEHICLE-OPERATIONS.md](15-DAILY-VEHICLE-OPERATIONS.md). Fuel, document renewal, part inventory, vendor billing, serta service schedule belum masuk increment ini.
 
 ## Bukti legacy yang dipakai
 
@@ -107,7 +107,7 @@ Import hanya mengambil kendaraan aktif yang disetujui Fleet owner. Initial targe
 - work-order number allocation rollback-safe dan tidak dialokasikan pada draft;
 - API contract versioned untuk Operations Web/mobile consumer;
 - Mantine Operations Web dapat login, menemukan site berdasarkan access scope, membuat vehicle/type/work order, dan menjalankan lifecycle;
-- PostgreSQL 18/container execution tetap menjadi gate environment karena Docker daemon lokal belum tersedia.
+- PostgreSQL 18 migration/seeder dan container execution telah diverifikasi melalui local Compose.
 
 ## Keputusan yang masih membutuhkan owner
 

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\ChecklistTemplate;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\DocumentSequenceRule;
@@ -64,6 +65,24 @@ class FoundationSeeder extends Seeder
                         'effective_from' => '2020-01-01',
                     ],
                 );
+
+                $checklist = ChecklistTemplate::query()->updateOrCreate(
+                    ['company_id' => $company->id, 'code' => 'VEHICLE_PRE_DEPARTURE', 'version' => 1],
+                    ['name' => 'Pre-departure Vehicle Safety', 'status' => 'active'],
+                );
+                foreach ([
+                    ['BODY', 'Body dan bak kendaraan', false],
+                    ['FRONT_LIGHTS', 'Lampu depan dan sein', true],
+                    ['REAR_LIGHTS', 'Lampu belakang dan rem', true],
+                    ['TIRES', 'Ban dan tekanan angin', true],
+                    ['SPARE_TIRE', 'Ban cadangan dan alat pengganti', false],
+                    ['WINDSHIELD', 'Kaca, spion, dan wiper', true],
+                ] as $index => [$itemCode, $label, $critical]) {
+                    $checklist->items()->updateOrCreate(
+                        ['code' => $itemCode],
+                        ['line_number' => $index + 1, 'label' => $label, 'is_required' => true, 'is_critical' => $critical],
+                    );
+                }
             }
         }
 
@@ -86,6 +105,9 @@ class FoundationSeeder extends Seeder
             ['fleet.vehicle.view', 'fleet', 'vehicle', 'view'],
             ['fleet.vehicle.manage', 'fleet', 'vehicle', 'manage'],
             ['fleet.checklist.submit', 'fleet', 'checklist', 'submit'],
+            ['fleet.trip.view', 'fleet', 'trip', 'view'],
+            ['fleet.trip.operate', 'fleet', 'trip', 'operate'],
+            ['fleet.trip.manage', 'fleet', 'trip', 'manage'],
             ['maintenance.work-order.view', 'maintenance', 'work-order', 'view'],
             ['maintenance.work-order.manage', 'maintenance', 'work-order', 'manage'],
         ])->mapWithKeys(function (array $definition): array {
@@ -106,6 +128,7 @@ class FoundationSeeder extends Seeder
             'management-access-owner' => ['Management Access Owner', true, 'company'],
             'department-manager' => ['Department Manager', false, 'department'],
             'fleet-manager' => ['Fleet Manager', false, 'location'],
+            'ops-driver' => ['Operations Driver', false, 'location'],
             'maintenance-officer' => ['Maintenance Officer', false, 'location'],
             'auditor' => ['Auditor', true, 'global'],
         ];
@@ -157,7 +180,23 @@ class FoundationSeeder extends Seeder
                 'file.asset.delete',
                 'fleet.vehicle.view',
                 'fleet.vehicle.manage',
+                'fleet.checklist.submit',
+                'fleet.trip.view',
+                'fleet.trip.operate',
+                'fleet.trip.manage',
                 'maintenance.work-order.view',
+            ])
+            ->pluck('id'));
+
+        Role::query()->where('code', 'ops-driver')->firstOrFail()
+            ->permissions()->syncWithoutDetaching($permissions
+            ->only([
+                'file.asset.create',
+                'file.asset.view',
+                'fleet.vehicle.view',
+                'fleet.checklist.submit',
+                'fleet.trip.view',
+                'fleet.trip.operate',
             ])
             ->pluck('id'));
 

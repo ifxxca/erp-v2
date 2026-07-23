@@ -116,6 +116,13 @@ class FleetMaintenanceService
                     409,
                 );
             }
+            if ($locked->trips()->where('status', 'active')->exists()) {
+                throw new FleetMaintenanceException(
+                    'Vehicle has an active trip; check it in or cancel the trip before a manual status change.',
+                    'VEHICLE_ACTIVE_TRIP',
+                    409,
+                );
+            }
 
             $locked->update(['operational_status' => $targetStatus, 'status_reason' => $reason]);
             $locked->statusHistory()->create([

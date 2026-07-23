@@ -45,6 +45,9 @@ export type OperationsContext = {
     can_manage_vehicles: boolean
     can_view_work_orders: boolean
     can_manage_work_orders: boolean
+    can_view_trips: boolean
+    can_operate_trips: boolean
+    can_manage_trips: boolean
   }
 }
 export type VehicleType = { id: string; code: string; name: string }
@@ -57,5 +60,16 @@ export type WorkOrderJob = { id: string; description: string; status: string; la
 export type WorkOrder = {
   id: string; document_number: string | null; work_order_date: string; priority: string; status: string
   problem_description: string; total_cost: string; vehicle: Vehicle; jobs: WorkOrderJob[]
+}
+export type ChecklistItem = {
+  id: string; code: string; label: string; line_number: number; is_required: boolean; is_critical: boolean
+}
+export type ChecklistTemplate = {
+  id: string; code: string; name: string; version: number; items: ChecklistItem[]
+}
+export type VehicleTrip = {
+  id: string; status: string; purpose: string; destination: string | null
+  start_odometer: number; end_odometer: number | null; departed_at: string; arrived_at: string | null
+  cancel_reason: string | null; vehicle: Vehicle; driver: { id: string; name: string; email: string }
 }
 export type Page<T> = { data: T[]; current_page: number; last_page: number; total: number }

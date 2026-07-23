@@ -18,6 +18,7 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 12. [12-FOUNDATION-STATUS.md](12-FOUNDATION-STATUS.md) — implementation evidence, verified checks, dan intentionally pending work.
 13. [13-OBSERVABILITY-RUNBOOK.md](13-OBSERVABILITY-RUNBOOK.md) — health, metrics, alert threshold, triage, dan audited dead-letter re-drive.
 14. [14-FLEET-MAINTENANCE-PILOT.md](14-FLEET-MAINTENANCE-PILOT.md) — legacy evidence, physical slice, lifecycle, authorization, dan vehicle import contract pilot.
+15. [15-DAILY-VEHICLE-OPERATIONS.md](15-DAILY-VEHICLE-OPERATIONS.md) — checkout/checklist/check-in lifecycle, invariant odometer, role driver, dan mobile readiness.
 
 ## Architecture Decision Records
 
@@ -45,7 +46,7 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 |---|---|---|
 | Product scope | P0 accepted | Validasi flow detail bersama domain owner |
 | Architecture | Foundation implemented | Production collector integration dan deployment verification |
-| Logical ERD | Fleet/Maintenance pilot physical slice | Review checklist, odometer, documents, schedule, dan parts boundary |
+| Logical ERD | Fleet/Maintenance + daily vehicle operations physical slice | Review documents, service schedule, fuel/event, dan parts boundary |
 | Identity/RBAC | Implemented and verified | Access certification/SoD reporting dan production environment verification |
 | Data import | Vehicle contract drafted from legacy profile | Owner mapping, dry-run, dan reconciliation sign-off |
 | Delivery plan | Accepted baseline | Konfirmasi team capacity dan onboarding pilot |

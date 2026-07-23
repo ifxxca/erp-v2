@@ -3,17 +3,23 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CancelVehicleTripRequest;
 use App\Http\Requests\ChangeVehicleStatusRequest;
+use App\Http\Requests\CheckInVehicleRequest;
+use App\Http\Requests\CheckoutVehicleRequest;
 use App\Http\Requests\CreateMaintenanceWorkOrderRequest;
 use App\Http\Requests\CreateVehicleRequest;
 use App\Http\Requests\CreateVehicleTypeRequest;
 use App\Http\Requests\TransitionMaintenanceWorkOrderRequest;
+use App\Models\ChecklistTemplate;
 use App\Models\Company;
 use App\Models\Location;
 use App\Models\MaintenanceWorkOrder;
 use App\Models\Vehicle;
+use App\Models\VehicleTrip;
 use App\Models\VehicleType;
 use App\Modules\FleetMaintenance\Application\FleetMaintenanceService;
+use App\Modules\FleetMaintenance\Application\VehicleTripService;
 use App\Modules\Identity\Application\EffectivePermissionResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +28,7 @@ class FleetMaintenanceController extends Controller
 {
     public function __construct(
         private readonly FleetMaintenanceService $service,
+        private readonly VehicleTripService $trips,
         private readonly EffectivePermissionResolver $permissions,
     ) {}
 
@@ -31,6 +38,8 @@ class FleetMaintenanceController extends Controller
         $hasGlobalAccess = collect([
             'fleet.vehicle.view',
             'maintenance.work-order.view',
+            'fleet.trip.view',
+            'fleet.trip.operate',
         ])->contains(fn (string $permission): bool => $this->permissions->allowsGlobal($user, $permission));
         $locations = Location::query()
             ->with('company:id,code,legal_name')
@@ -50,6 +59,9 @@ class FleetMaintenanceController extends Controller
                     'can_manage_vehicles' => $this->permissions->allows($user, 'fleet.vehicle.manage', $location->company_id, locationId: $location->id),
                     'can_view_work_orders' => $this->permissions->allows($user, 'maintenance.work-order.view', $location->company_id, locationId: $location->id),
                     'can_manage_work_orders' => $this->permissions->allows($user, 'maintenance.work-order.manage', $location->company_id, locationId: $location->id),
+                    'can_view_trips' => $this->permissions->allows($user, 'fleet.trip.view', $location->company_id, locationId: $location->id),
+                    'can_operate_trips' => $this->permissions->allows($user, 'fleet.trip.operate', $location->company_id, locationId: $location->id),
+                    'can_manage_trips' => $this->permissions->allows($user, 'fleet.trip.manage', $location->company_id, locationId: $location->id),
                 ];
 
                 return in_array(true, $capabilities, true) ? [
@@ -147,6 +159,85 @@ class FleetMaintenanceController extends Controller
         return response()->json(['data' => $changed]);
     }
 
+    public function checklistTemplate(Company $company, Location $location): JsonResponse
+    {
+        $this->assertLocation($company, $location);
+        $template = ChecklistTemplate::query()
+            ->with('items')
+            ->where('company_id', $company->id)
+            ->where('code', 'VEHICLE_PRE_DEPARTURE')
+            ->where('status', 'active')
+            ->orderByDesc('version')
+            ->first();
+
+        return $template
+            ? response()->json(['data' => $template])
+            : response()->json(['message' => 'Checklist template is not configured.', 'code' => 'CHECKLIST_TEMPLATE_NOT_CONFIGURED'], 404);
+    }
+
+    public function trips(Request $request, Company $company, Location $location): JsonResponse
+    {
+        $this->assertLocation($company, $location);
+        $trips = VehicleTrip::query()
+            ->with(['vehicle.type:id,code,name', 'driver:id,name,email'])
+            ->where('company_id', $company->id)
+            ->where('location_id', $location->id)
+            ->when(! $this->permissions->allows(
+                $request->user(), 'fleet.trip.manage', $company->id, locationId: $location->id,
+            ), fn ($query) => $query->where('driver_id', $request->user()->id))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->latest('departed_at')
+            ->paginate(min(max($request->integer('per_page', 20), 1), 100));
+
+        return response()->json($trips);
+    }
+
+    public function checkout(
+        CheckoutVehicleRequest $request,
+        Company $company,
+        Location $location,
+    ): JsonResponse {
+        $this->assertLocation($company, $location);
+        $trip = $this->trips->checkout($company, $location, $request->user(), $request->validated(), $request);
+
+        return response()->json(['data' => $trip], 201);
+    }
+
+    public function trip(Request $request, Company $company, Location $location, VehicleTrip $trip): JsonResponse
+    {
+        $this->assertTrip($company, $location, $trip);
+        $this->assertTripVisibleTo($request, $trip);
+
+        return response()->json(['data' => $trip->load([
+            'vehicle.type:id,code,name', 'driver:id,name,email', 'checklist.template.items', 'checklist.answers.item',
+        ])]);
+    }
+
+    public function checkIn(
+        CheckInVehicleRequest $request,
+        Company $company,
+        Location $location,
+        VehicleTrip $trip,
+    ): JsonResponse {
+        $this->assertTrip($company, $location, $trip);
+        $this->assertTripVisibleTo($request, $trip);
+        $changed = $this->trips->checkIn($trip, $request->user(), $request->validated(), $request);
+
+        return response()->json(['data' => $changed]);
+    }
+
+    public function cancelTrip(
+        CancelVehicleTripRequest $request,
+        Company $company,
+        Location $location,
+        VehicleTrip $trip,
+    ): JsonResponse {
+        $this->assertTrip($company, $location, $trip);
+        $changed = $this->trips->cancel($trip, $request->user(), $request->validated('reason'), $request);
+
+        return response()->json(['data' => $changed]);
+    }
+
     public function workOrders(Request $request, Company $company, Location $location): JsonResponse
     {
         $this->assertLocation($company, $location);
@@ -216,5 +307,21 @@ class FleetMaintenanceController extends Controller
     {
         $this->assertLocation($company, $location);
         abort_unless($workOrder->company_id === $company->id && $workOrder->location_id === $location->id, 404);
+    }
+
+    private function assertTrip(Company $company, Location $location, VehicleTrip $trip): void
+    {
+        $this->assertLocation($company, $location);
+        abort_unless($trip->company_id === $company->id && $trip->location_id === $location->id, 404);
+    }
+
+    private function assertTripVisibleTo(Request $request, VehicleTrip $trip): void
+    {
+        abort_unless(
+            $trip->driver_id === $request->user()->id || $this->permissions->allows(
+                $request->user(), 'fleet.trip.manage', $trip->company_id, locationId: $trip->location_id,
+            ),
+            404,
+        );
     }
 }

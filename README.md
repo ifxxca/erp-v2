@@ -49,11 +49,12 @@ erp-v2/
 - [P0 Decisions Baseline](docs/10-P0-DECISIONS.md)
 - [P1 Identity Decisions](docs/11-P1-IDENTITY-DECISIONS.md)
 - [Foundation Implementation Status](docs/12-FOUNDATION-STATUS.md)
+- [Daily Vehicle Operations](docs/15-DAILY-VEHICLE-OPERATIONS.md)
 - [Architecture Decision Records](docs/adr/)
 
 ## Status
 
-P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web, Operations Web, shared packages, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, serta observability/recovery control sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
+P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web, Operations Web, shared packages, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
 
 ## Quick verification
 
@@ -64,7 +65,8 @@ npm run lint
 
 docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml build api
 docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml run --rm api composer install
-docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml run --rm api php artisan test
+docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml up -d
+powershell -File infrastructure/test-postgres.ps1
 docker compose --env-file infrastructure/.env.example -f infrastructure/compose.yaml run --rm api php vendor/bin/pint --test
 ```
 

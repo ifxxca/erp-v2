@@ -97,6 +97,18 @@ Route::prefix('v1')->group(function (): void {
                     ->middleware('permission.scoped:fleet.vehicle.view');
                 Route::post('/fleet/vehicles/{vehicle}/status', [FleetMaintenanceController::class, 'changeVehicleStatus'])
                     ->middleware('permission.scoped:fleet.vehicle.manage');
+                Route::get('/fleet/checklist-template', [FleetMaintenanceController::class, 'checklistTemplate'])
+                    ->middleware('permission.scoped:fleet.trip.view');
+                Route::get('/fleet/trips', [FleetMaintenanceController::class, 'trips'])
+                    ->middleware('permission.scoped:fleet.trip.view');
+                Route::post('/fleet/trips/checkout', [FleetMaintenanceController::class, 'checkout'])
+                    ->middleware('permission.scoped:fleet.trip.operate');
+                Route::get('/fleet/trips/{trip}', [FleetMaintenanceController::class, 'trip'])
+                    ->middleware('permission.scoped:fleet.trip.view');
+                Route::post('/fleet/trips/{trip}/check-in', [FleetMaintenanceController::class, 'checkIn'])
+                    ->middleware('permission.scoped:fleet.trip.operate');
+                Route::post('/fleet/trips/{trip}/cancel', [FleetMaintenanceController::class, 'cancelTrip'])
+                    ->middleware('permission.scoped:fleet.trip.manage');
                 Route::get('/maintenance/work-orders', [FleetMaintenanceController::class, 'workOrders'])
                     ->middleware('permission.scoped:maintenance.work-order.view');
                 Route::post('/maintenance/work-orders', [FleetMaintenanceController::class, 'createWorkOrder'])

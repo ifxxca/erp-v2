@@ -51,4 +51,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(MaintenanceWorkOrder::class);
     }
+
+    public function trips(): HasMany
+    {
+        return $this->hasMany(VehicleTrip::class);
+    }
 }
