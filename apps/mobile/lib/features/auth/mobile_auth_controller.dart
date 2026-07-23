@@ -78,6 +78,14 @@ final class MobileAuthController extends ChangeNotifier {
     }
   }
 
+  Future<void> handleSessionExpired() async {
+    await _sessionManager.clear();
+    _busy = false;
+    _stage = MobileAuthStage.signedOut;
+    _errorMessage = 'Sesi berakhir. Silakan masuk kembali.';
+    notifyListeners();
+  }
+
   void _startOperation() {
     _busy = true;
     _errorMessage = null;

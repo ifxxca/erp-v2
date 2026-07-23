@@ -14,6 +14,9 @@ Dokumen ini menetapkan fondasi contract untuk aplikasi Flutter. Aplikasi mobile 
 - `apps/mobile` menyediakan Flutter 3.44 Android/iOS shell, environment guard, secure credential blob, generated authentication gateway, single-flight token rotation, request correlation, serta explicit mutation context.
 - Flow aplikasi memilih login, MFA challenge, atau authenticated shell dari secure-session state; MFA sukses memperbarui credential blob secara atomic, sedangkan challenge dengan sesi ditolak menghapus seluruh credential lokal.
 - Login dan MFA memiliki validasi input, busy-state, safe localized error mapping, device-session label per platform, dan widget test untuk lifecycle login sampai logout.
+- Authenticated shell mengambil `/me` dan `/operations/context` secara paralel, memetakan generated model ke application-domain model immutable, lalu memilih hanya legal entity/location yang diberikan server.
+- Operator dapat mengganti area kerja yang authorized, melihat capability Fleet/Trip/Maintenance, melakukan pull-to-refresh, serta retry menggunakan correlated request reference. Response `401` menghapus secure session dan kembali ke login.
+- Refresh response tidak meminta challenge ulang ketika token family sudah memiliki MFA assurance; rotated access token tetap mewarisi assurance family yang sama.
 
 Generated package adalah transport/model layer, bukan aplikasi dan bukan tempat business policy.
 

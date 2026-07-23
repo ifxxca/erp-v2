@@ -176,7 +176,7 @@ class MobileTokenService
             'refresh_expires_at' => $family->absolute_expires_at->toIso8601String(),
             'family_id' => $family->id,
             'token_id' => $accessToken->accessToken->id,
-            'mfa_required' => $this->mfaRequirement->required($user),
+            'mfa_required' => $this->mfaRequirement->required($user) && ! $family->mfa_verified_at,
         ];
     }
 

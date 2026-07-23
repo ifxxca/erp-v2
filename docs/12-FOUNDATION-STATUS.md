@@ -19,7 +19,7 @@ Status date: 2026-07-23
 - Hashed single-use recovery codes, regeneration, optional-MFA disable, and mandatory MFA for active privileged assignments.
 - Non-enumerating password recovery with hashed, expiring, single-use reset tokens and device revocation after reset.
 - Device-session listing and scoped revocation plus surface-specific idle and absolute token lifetimes.
-- Hashed, rotating mobile refresh-token families with 30-day absolute expiry, MFA binding, replay detection, and family-wide revocation.
+- Hashed, rotating mobile refresh-token families with 30-day absolute expiry, MFA binding and assurance-aware challenge response, replay detection, and family-wide revocation.
 - Company-scoped identity directory API with search/filter, employment history, organization catalog, and non-leaking cross-company detail.
 - Effective-dated department/location administration owned by HR, including primary-department enforcement, scope validation, conflict rejection, and append-only audit.
 - Global-only identity status administration owned by IT/security, with self-action denial, active-employment gate, recent MFA, and immediate session/refresh-family revocation.
@@ -61,7 +61,7 @@ Status date: 2026-07-23
 - npm workspace plus shared API-contract and web-UI packages.
 - OpenAPI-generated TypeScript schemas shared by ERP and Operations Web, with committed output and CI drift detection.
 - OpenAPI-generated Dart/Dio package for Flutter with built-value models, bearer transport support, committed build-runner output, pinned containerized generation, and independent CI drift detection.
-- Flutter 3.44 Android/iOS application with validated environment configuration, responsive login/MFA/authenticated shell, OS secure-storage credential blob, generated mobile-auth gateway, proactive/401 single-flight refresh, correlation headers, explicit mutation idempotency context, and isolated mobile CI.
+- Flutter 3.44 Android/iOS application with validated environment configuration, responsive login/MFA, access-derived company/location Operations Context, capability projection, OS secure-storage credential blob, generated mobile-auth gateway, proactive/401 single-flight refresh, correlation headers, explicit mutation idempotency context, and isolated mobile CI.
 - ERP and Operations Web typed runtime clients for auth, identity governance, notifications, security/session management, Fleet, trips, checklist, maintenance, and file operations, with centralized bearer, idempotency, and correlated-error handling.
 - PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, scheduler, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
@@ -69,7 +69,7 @@ Status date: 2026-07-23
 
 ## Verified locally
 
-- API test suite: 126 tests, 774 assertions.
+- API test suite: 126 tests, 776 assertions.
 - SQLite clean migration used by fast automated tests.
 - Foundation seeder repeatability.
 - Cross-company permission isolation and disabled-user deny behavior.
@@ -88,7 +88,7 @@ Status date: 2026-07-23
 - Identity directory scope/cross-company isolation, HR organization scheduling, invalid-scope and schedule-conflict denial, global-status boundaries, reactivation eligibility, and session revocation.
 - ERP and Operations production builds.
 - Web lint.
-- PostgreSQL 18 clean migration + FoundationSeeder and the full API suite (126 tests, 774 assertions) on PHP 8.5.
+- PostgreSQL 18 clean migration + FoundationSeeder and the full API suite (126 tests, 776 assertions) on PHP 8.5.
 - Browser-based ERP smoke tests at desktop and mobile sizes with real API data and no application console errors, including invitation, TOTP enrollment, recovery-code presentation, mandatory MFA re-entry, session revocation, privileged request/approval/revocation, standard scoped assignment/revocation/self-action guard, system-role inspection, and the full custom-role create/edit/permission-sync/delete lifecycle.
 - Frontend tooling is isolated from the legacy parent PostCSS/Tailwind configuration.
 - Composer strict validation.
@@ -96,7 +96,7 @@ Status date: 2026-07-23
 - Docker Compose configuration parsing.
 - OpenAPI TypeScript regeneration is deterministic, both web applications compile against shared schemas, and the npm dependency audit is clean.
 - Dart client generation is deterministic with OpenAPI Generator 7.22.0; dependency resolution, build-runner generation, and static analysis pass on Dart 3.12.2.
-- Flutter mobile authentication static analysis, 24 unit/widget tests, and native debug APK build pass on Flutter 3.44.0 / Dart 3.12.0.
+- Flutter mobile authentication and Operations Context static analysis, 30 unit/widget tests, and native debug APK build pass on Flutter 3.44.0 / Dart 3.12.0.
 - ERP and Operations runtime-client tests verify MFA contracts, bearer/idempotency headers, typed path/query/body serialization, session identifier normalization, and correlated API error mapping.
 
 ## Container verification
@@ -109,4 +109,4 @@ Local Compose is verified with PostgreSQL 18, PHP 8.5 API, Redis, MinIO, ClamAV,
 - Fleet documents, service due schedule, fuel/pickup events, route/geolocation, mandatory checklist-evidence policy, parts/inventory boundary, vendor billing, and maintenance approval workflow.
 - Production mobile Fleet screens, offline encrypted draft/command queue, push notifications, device-level integration tests, signing, and store/internal distribution.
 
-The mobile token lifecycle, generated Dart transport, login/MFA/authenticated shell, secure storage, refresh coordinator, and request metadata adapters are implemented. Production deployment still requires Fleet domain UI, approved offline conflict policy, signing, and end-to-end validation on physical devices.
+The mobile token lifecycle, generated Dart transport, login/MFA, current-user and company/location context selection, capability-aware shell, secure storage, refresh coordinator, and request metadata adapters are implemented. Production deployment still requires Fleet data/action UI, approved offline conflict policy, signing, and end-to-end validation on physical devices.

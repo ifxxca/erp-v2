@@ -10,10 +10,13 @@ Foundation yang sudah tersedia:
 - mobile login/rotating refresh gateway dari generated client;
 - responsive login, MFA TOTP/recovery-code, restored-session, dan authenticated
   application shell;
+- current-user dan access-derived company/location workspace dengan pemilihan
+  area kerja serta capability projection;
 - proactive dan 401-triggered single-flight refresh;
 - bearer injection, stable request ID saat retry, dan explicit idempotency context;
 - local-session removal ketika refresh replay ditolak atau logout dilakukan;
 - translated safe authentication errors tanpa mengekspos detail internal;
+- retryable correlated context errors dan automatic local sign-out pada `401`;
 - Android API 24 minimum dan iOS Keychain entitlement.
 
 ## Development

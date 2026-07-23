@@ -8,6 +8,7 @@ use App\Models\MobileRefreshTokenFamily;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
 use App\Models\UserCompanyMembership;
+use App\Models\UserMfaMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -171,7 +172,14 @@ class MobileRefreshTokenApiTest extends TestCase
     public function test_mfa_assurance_is_bound_to_family_and_carried_to_rotated_access_token(): void
     {
         $user = $this->activeEmployee();
-        $login = $this->login($user);
+        UserMfaMethod::query()->create([
+            'user_id' => $user->id,
+            'type' => 'totp',
+            'secret' => str_repeat('A', 32),
+            'status' => 'active',
+            'confirmed_at' => now(),
+        ]);
+        $login = $this->login($user)->assertJsonPath('mfa_required', true);
         $verifiedAt = now()->subMinutes(5);
         $family = MobileRefreshTokenFamily::query()->sole();
         $family->forceFill(['mfa_verified_at' => $verifiedAt])->save();
@@ -181,6 +189,7 @@ class MobileRefreshTokenApiTest extends TestCase
         ])->assertOk();
 
         $newAccessToken = PersonalAccessToken::query()->sole();
+        $rotated->assertJsonPath('mfa_required', false);
         $this->assertTrue($newAccessToken->mfa_verified_at->equalTo($family->fresh()->mfa_verified_at));
         $this->assertSame($family->id, $newAccessToken->refresh_token_family_id);
         $this->withToken($rotated->json('access_token'))->getJson('/api/v1/auth/sessions')->assertOk();

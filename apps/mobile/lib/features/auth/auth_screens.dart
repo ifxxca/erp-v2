@@ -2,16 +2,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:rajawali_mobile/features/auth/mobile_auth_controller.dart';
 import 'package:rajawali_mobile/features/home/authenticated_shell.dart';
+import 'package:rajawali_mobile/features/operations/operations_context_repository.dart';
 
 final class MobileAuthFlow extends StatelessWidget {
   const MobileAuthFlow({
     required this.controller,
     required this.environment,
+    required this.operationsRepository,
     super.key,
   });
 
   final MobileAuthController controller;
   final String environment;
+  final OperationsContextRepository operationsRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +28,8 @@ final class MobileAuthFlow extends StatelessWidget {
         MobileAuthStage.mfaRequired => MfaScreen(controller: controller),
         MobileAuthStage.authenticated => AuthenticatedShell(
           environment: environment,
-          busy: controller.busy,
-          onSignOut: controller.signOut,
+          authController: controller,
+          contextRepository: operationsRepository,
         ),
       },
     );
