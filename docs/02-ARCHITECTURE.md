@@ -87,7 +87,7 @@ Setiap module memiliki Http, Actions, DTOs, Models, Policies, Services, Events, 
 
 - Prefix `/api/v1`.
 - OpenAPI adalah contract source of truth.
-- Generated typed client untuk web/mobile bila tooling mendukung.
+- Generated typed schemas/runtime client untuk web dan generated Dart/Dio client untuk mobile berasal dari contract yang sama.
 - Consistent error envelope, pagination, filtering, and request ID.
 - API ingress normalizes `X-Request-ID`; authenticated business mutations can persist and replay an exact response by identity-scoped `Idempotency-Key` without rerunning domain side effects.
 - `Idempotency-Key` untuk payment, stock, approval, pickup resolution, dan offline mutation.
@@ -131,7 +131,7 @@ Subdomain bukan microservice boundary. Service baru hanya diekstrak jika ada keb
 | Database | PostgreSQL 18, satu schema operasional multi-company |
 | Cache/queue | Redis |
 | ERP/OPS web | React 19 + TypeScript + Vite, aplikasi terpisah dengan shared UI/typed API client |
-| Mobile | Flutter 3.44, dimulai setelah Operations API stabil |
+| Mobile | Flutter 3.44; generated Dart/Dio contract client tersedia, aplikasi dimulai setelah Operations API stabil |
 | File | Private S3-compatible object storage |
 | Contract | OpenAPI 3.1 sebagai source of truth API |
 | Local environment | Containerized dependencies dan repeatable setup |

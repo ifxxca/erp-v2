@@ -80,7 +80,7 @@ Attachment file ke checklist answer, pembuatan trip, dan perubahan status kendar
 
 ## Mobile readiness
 
-Payload tidak bergantung pada HTML atau session browser. Mobile login/refresh-token family yang sudah ada dapat memanggil endpoint yang sama dengan bearer token. Langkah mobile berikutnya adalah secure storage, local draft checklist, upload evidence, dan idempotent retry queue. Offline checkout final belum boleh dilakukan sebelum policy konflik waktu, odometer, dan vehicle availability ditetapkan; draft offline boleh disiapkan, tetapi server tetap menjadi authority saat submit.
+Payload tidak bergantung pada HTML atau session browser. Generated Dart/Dio client `rajawali_api_client` sudah menyediakan login mobile, refresh token, operations context, Fleet/trip, dan private-file endpoints dari OpenAPI yang sama. Langkah mobile berikutnya adalah adapter secure storage, single-flight refresh, local draft checklist, upload evidence, dan idempotent retry queue. Offline checkout final belum boleh dilakukan sebelum policy konflik waktu, odometer, dan vehicle availability ditetapkan; draft offline boleh disiapkan, tetapi server tetap menjadi authority saat submit.
 
 ## Acceptance evidence
 
@@ -89,6 +89,7 @@ Payload tidak bergantung pada HTML atau session browser. Mobile login/refresh-to
 - Operations Web Mantine mempunyai tab operasional harian, upload evidence yang menunggu hasil scan, checklist checkout, check-in, dan manager cancellation.
 - Operations Web memanggil seluruh lifecycle melalui generated OpenAPI paths; compile-time typing mencakup path/query/body/response dan MFA memakai field `credential` yang sama dengan API.
 - OpenAPI `0.17.2` mendeskripsikan enam endpoint, schema trip/checklist, evidence attachment, capability context, dan pagination yang eksplisit.
+- Dart package `rajawali_api_client` version `0.17.2` berhasil menjalankan dependency resolution, build-runner, dan static analysis pada Dart 3.12.2.
 
 ## Deferred owner decisions
 

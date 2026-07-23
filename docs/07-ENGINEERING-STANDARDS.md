@@ -20,6 +20,7 @@ apps/
   mobile/              # dibuat ketika Stage 5 dimulai
 packages/
   api-contract/
+  api-client-dart/     # generated; jangan diedit manual
   ui-system/
   tooling/
 infrastructure/
@@ -48,8 +49,10 @@ Nama package detail mengikuti convention Laravel, React/Vite, dan Flutter, tetap
 - Mobile: Flutter 3.44 ketika mobile stage dimulai.
 - File: private S3-compatible object storage; file tidak disimpan di database atau public web root.
 - Shared frontend package hanya berisi design system, generated API client, serta utility non-bisnis.
-- OpenAPI adalah sumber schema lintas surface. Generated TypeScript schemas harus di-commit dan `npm run contract:check` wajib lulus di CI; tipe response tidak boleh disalin manual ketika schema contract tersedia.
+- OpenAPI adalah sumber schema lintas surface. Generated TypeScript schemas dan Dart/Dio client harus di-commit dan `npm run contract:check` wajib lulus di CI; tipe response tidak boleh disalin manual ketika schema contract tersedia.
 - Web surface harus memanggil endpoint melalui generated `paths` bila operation tersedia. Raw fetch hanya diperbolehkan untuk transport khusus seperti server-issued multipart upload dan wajib tetap memakai schema metadata/error resmi.
+- Flutter memakai `packages/api-client-dart` sebagai transport/model layer. Secure storage, bearer injection, single-flight token refresh, stable idempotency key, retry policy, request correlation, dan offline state berada pada adapter aplikasi dan harus diuji terpisah.
+- Generated Dart client harus diregenerasi melalui script repository dengan versi generator/Dart yang dipin; generated files tidak diedit manual.
 - Versi patch mengikuti security update; upgrade major membutuhkan ADR/compatibility plan jika berdampak pada contract atau deployment.
 
 ## Naming

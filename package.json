@@ -12,8 +12,12 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "contract:generate": "npm run generate --workspace @rajawali/api-contract",
+    "contract:generate": "npm run generate:all --workspace @rajawali/api-contract",
+    "contract:generate:typescript": "npm run generate --workspace @rajawali/api-contract",
+    "contract:generate:dart": "npm run generate:dart --workspace @rajawali/api-contract",
     "contract:check": "npm run check --workspace @rajawali/api-contract",
+    "contract:check:typescript": "npm run check:typescript --workspace @rajawali/api-contract",
+    "contract:check:dart": "npm run check:dart --workspace @rajawali/api-contract",
     "dev:erp": "npm run dev --workspace @rajawali/erp-web",
     "dev:ops": "npm run dev --workspace @rajawali/ops-web"
   },

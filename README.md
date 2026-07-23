@@ -31,7 +31,7 @@ erp-v2/
   apps/               Source aplikasi (dibuat setelah foundation disetujui)
   docs/               Source of truth produk dan teknis
   infrastructure/     Deployment, environment, observability
-  packages/           API contract dan shared frontend packages
+  packages/           API contract, generated clients, dan shared frontend packages
 ```
 
 ## Dokumen utama
@@ -50,11 +50,12 @@ erp-v2/
 - [P1 Identity Decisions](docs/11-P1-IDENTITY-DECISIONS.md)
 - [Foundation Implementation Status](docs/12-FOUNDATION-STATUS.md)
 - [Daily Vehicle Operations](docs/15-DAILY-VEHICLE-OPERATIONS.md)
+- [Mobile Client Foundation](docs/16-MOBILE-CLIENT-FOUNDATION.md)
 - [Architecture Decision Records](docs/adr/)
 
 ## Status
 
-P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web dan Operations Web dengan typed OpenAPI runtime, shared generated TypeScript contract, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
+P0 architecture baseline dan P1 Identity governance sudah disetujui. API, ERP Web dan Operations Web dengan typed OpenAPI runtime, shared generated TypeScript contract, generated Dart/Dio client, local infrastructure, multi-company identity, private files, atomic numbering, transactional outbox, central notification inbox, observability/recovery control, serta Fleet checkout/checklist/check-in sudah memiliki implementation foundation. Lihat status verifikasi sebelum menganggap capability siap production.
 
 ## Quick verification
 

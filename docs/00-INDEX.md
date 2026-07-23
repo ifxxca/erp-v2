@@ -19,6 +19,7 @@ Folder ini adalah source of truth untuk fresh rebuild ERP. Dokumen legacy di lua
 13. [13-OBSERVABILITY-RUNBOOK.md](13-OBSERVABILITY-RUNBOOK.md) — health, metrics, alert threshold, triage, dan audited dead-letter re-drive.
 14. [14-FLEET-MAINTENANCE-PILOT.md](14-FLEET-MAINTENANCE-PILOT.md) — legacy evidence, physical slice, lifecycle, authorization, dan vehicle import contract pilot.
 15. [15-DAILY-VEHICLE-OPERATIONS.md](15-DAILY-VEHICLE-OPERATIONS.md) — checkout/checklist/check-in lifecycle, invariant odometer, role driver, dan mobile readiness.
+16. [16-MOBILE-CLIENT-FOUNDATION.md](16-MOBILE-CLIENT-FOUNDATION.md) — generated Dart client, batas adapter aplikasi, token lifecycle, retry, dan offline safety.
 
 ## Architecture Decision Records
 

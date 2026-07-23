@@ -1,0 +1,15 @@
+generatorName: dart-dio
+globalProperties:
+  apiTests: false
+  modelTests: false
+  apiDocs: false
+  modelDocs: false
+additionalProperties:
+  pubName: rajawali_api_client
+  pubVersion: 0.17.2
+  pubLibrary: rajawali_api_client
+  pubDescription: Typed Dart client for Rajawali Platform V2 API
+  pubPublishTo: none
+  disallowAdditionalPropertiesIfNotPresent: false
+  enumUnknownDefaultCase: true
+  serializationLibrary: built_value

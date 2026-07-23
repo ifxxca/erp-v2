@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "generate": "openapi-typescript openapi.yaml -o src/generated.ts",
-    "check": "npm run generate && git diff --exit-code -- src/generated.ts",
-    "lint": "npm run check"
+    "generate:all": "npm run generate && npm run generate:dart",
+    "generate:dart": "node scripts/generate-dart-client.mjs",
+    "check": "npm run check:typescript && npm run check:dart",
+    "check:typescript": "npm run generate && git diff --exit-code -- src/generated.ts",
+    "check:dart": "npm run generate:dart && node scripts/check-dart-client-drift.mjs",
+    "lint": "npm run check:typescript"
   },
   "exports": {
     ".": {
