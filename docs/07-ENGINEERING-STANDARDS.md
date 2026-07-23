@@ -17,7 +17,7 @@ apps/
   api/
   erp-web/
   ops-web/
-  mobile/              # dibuat ketika Stage 5 dimulai
+  mobile/              # Flutter shell; domain UI bertambah per vertical slice
 packages/
   api-contract/
   api-client-dart/     # generated; jangan diedit manual

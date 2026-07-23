@@ -11,17 +11,18 @@ Dokumen ini menetapkan fondasi contract untuk aplikasi Flutter. Aplikasi mobile 
 - Package mencakup seluruh API `0.17.2`, termasuk login surface mobile, rotating refresh token, operations context, Fleet/trip/checklist, dan private-file lifecycle.
 - OpenAPI Generator `7.22.0`, Dart SDK `3.12.2`, dan build dependency lockfile dipin serta dijalankan melalui Docker.
 - Generated source dan output build-runner di-commit. CI meregenerasi package, menjalankan dependency resolution/build/static analysis, lalu menolak drift atau file generated baru yang belum di-commit.
+- `apps/mobile` menyediakan Flutter 3.44 Android/iOS shell, environment guard, secure credential blob, generated authentication gateway, single-flight token rotation, request correlation, serta explicit mutation context.
 
 Generated package adalah transport/model layer, bukan aplikasi dan bukan tempat business policy.
 
 ## Application adapter responsibilities
 
-Aplikasi Flutter harus menyediakan adapter tipis di atas generated client untuk:
+Aplikasi Flutter menyediakan adapter tipis di atas generated client untuk:
 
-- menyimpan access/refresh token dalam secure storage OS, bukan preferences atau log;
+- menyimpan access/refresh token sebagai satu blob dalam secure storage OS, bukan preferences atau log;
 - menginjeksi bearer token serta request ID pada setiap request;
 - menjalankan hanya satu refresh request saat beberapa request menerima unauthorized secara bersamaan;
-- menyimpan refresh-token hasil rotasi secara atomik sebelum request lain dilanjutkan;
+- menyimpan refresh-token hasil rotasi sebagai satu secure write sebelum request lain dilanjutkan;
 - membuat satu `Idempotency-Key` per logical mutation dan memakai key yang sama saat retry;
 - tidak melakukan automatic retry mutation tanpa stable idempotency key;
 - memetakan correlated API error tanpa mengekspos detail internal;
@@ -45,11 +46,11 @@ Kedua command memerlukan Docker daemon. File di `packages/api-client-dart` tidak
 
 ## Next implementation gate
 
-Flutter application boleh dimulai setelah minimum berikut disetujui:
+Flutter domain UI dan offline capability boleh dilanjutkan setelah minimum berikut disetujui:
 
-1. environment/base-URL dan certificate policy;
-2. secure-storage dan biometric policy;
-3. refresh concurrency, logout, revocation, dan device-registration behavior;
+1. production hostname, certificate policy, signing identity, dan application ID final;
+2. biometric requirement untuk membuka credential atau tindakan tertentu;
+3. device-registration behavior dan copy final untuk revoked/replayed session;
 4. local database encryption, draft retention, serta conflict policy;
 5. push-notification provider dan deep-link ownership;
 6. device-level integration tests untuk login/MFA/refresh/replay, Fleet checkout/check-in, evidence upload, retry, dan revoked session.

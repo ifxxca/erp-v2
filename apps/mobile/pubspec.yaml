@@ -1,0 +1,24 @@
+name: rajawali_mobile
+description: Rajawali field operations mobile application.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  dio: ^5.10.0
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^10.3.1
+  rajawali_api_client:
+    path: ../../packages/api-client-dart
+  uuid: ^4.6.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
