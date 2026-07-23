@@ -12,3 +12,8 @@ Business logic tidak boleh ditempatkan di shared frontend package.
 setelah mengubah schema, commit `packages/api-contract/src/generated.ts`, dan gunakan
 `npm run contract:check` untuk memastikan generated types tidak tertinggal. Versi package
 `@rajawali/api-contract` mengikuti `info.version` pada OpenAPI.
+
+Operations Web memakai `openapi-fetch` di atas generated `paths`, sehingga path,
+parameter, query, request body, dan response mengikuti contract saat compile. Auth,
+idempotency, serta pemetaan error tetap berada pada adapter surface masing-masing;
+multipart binary memakai upload URL sementara yang diterbitkan API.

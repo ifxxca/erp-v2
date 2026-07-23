@@ -11,6 +11,7 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "contract:generate": "npm run generate --workspace @rajawali/api-contract",
     "contract:check": "npm run check --workspace @rajawali/api-contract",
     "dev:erp": "npm run dev --workspace @rajawali/erp-web",

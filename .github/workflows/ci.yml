@@ -67,5 +67,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run contract:check
+      - run: npm run test
       - run: npm run build
       - run: npm run lint

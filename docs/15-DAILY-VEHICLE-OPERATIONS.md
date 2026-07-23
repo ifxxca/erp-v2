@@ -87,7 +87,8 @@ Payload tidak bergantung pada HTML atau session browser. Mobile login/refresh-to
 - SQLite feature tests mencakup lifecycle sukses, required/critical checklist, odometer regression, active driver conflict, cancellation, audit, dan pelepasan active keys.
 - PostgreSQL 18 menjalankan clean migration + seeder dan seluruh API suite: 126 test, 774 assertion, PHP 8.5.
 - Operations Web Mantine mempunyai tab operasional harian, upload evidence yang menunggu hasil scan, checklist checkout, check-in, dan manager cancellation.
-- OpenAPI `0.17.1` mendeskripsikan enam endpoint, schema trip/checklist, evidence attachment, dan capability context yang eksplisit.
+- Operations Web memanggil seluruh lifecycle melalui generated OpenAPI paths; compile-time typing mencakup path/query/body/response dan MFA memakai field `credential` yang sama dengan API.
+- OpenAPI `0.17.2` mendeskripsikan enam endpoint, schema trip/checklist, evidence attachment, capability context, dan pagination yang eksplisit.
 
 ## Deferred owner decisions
 

@@ -2077,6 +2077,7 @@ export interface components {
         RequestId: string;
         /** @description A client-generated key for safely retrying an authenticated business mutation. Reuse with another route or payload returns 409. */
         IdempotencyKey: string;
+        PerPage: number;
         UserId: string;
         CompanyId: string;
         LocationId: string;
@@ -3890,6 +3891,7 @@ export interface operations {
             query?: {
                 search?: string;
                 status?: components["schemas"]["VehicleStatus"];
+                per_page?: components["parameters"]["PerPage"];
             };
             header?: never;
             path: {
@@ -4053,6 +4055,7 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["VehicleTripStatus"];
+                per_page?: components["parameters"]["PerPage"];
             };
             header?: never;
             path: {
@@ -4220,6 +4223,7 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["WorkOrderStatus"];
+                per_page?: components["parameters"]["PerPage"];
             };
             header?: never;
             path: {
