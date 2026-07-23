@@ -3,6 +3,7 @@ import 'package:rajawali_mobile/bootstrap/app_bootstrap.dart';
 import 'package:rajawali_mobile/core/config/app_config.dart';
 import 'package:rajawali_mobile/features/auth/auth_screens.dart';
 import 'package:rajawali_mobile/features/auth/mobile_auth_controller.dart';
+import 'package:rajawali_mobile/features/fleet/fleet_repository.dart';
 import 'package:rajawali_mobile/features/operations/operations_context_repository.dart';
 
 class RajawaliMobileApp extends StatefulWidget {
@@ -21,6 +22,7 @@ class RajawaliMobileApp extends StatefulWidget {
 
 final class _RajawaliMobileAppState extends State<RajawaliMobileApp> {
   late final MobileAuthController _authController;
+  late final FleetRepository _fleetRepository;
   late final OperationsContextRepository _operationsRepository;
 
   @override
@@ -30,6 +32,7 @@ final class _RajawaliMobileAppState extends State<RajawaliMobileApp> {
     _operationsRepository = GeneratedOperationsContextRepository(
       widget.services.api,
     );
+    _fleetRepository = GeneratedFleetRepository(widget.services.api);
   }
 
   @override
@@ -59,6 +62,7 @@ final class _RajawaliMobileAppState extends State<RajawaliMobileApp> {
       home: MobileAuthFlow(
         controller: _authController,
         environment: widget.config.environment.label,
+        fleetRepository: _fleetRepository,
         operationsRepository: _operationsRepository,
       ),
     );

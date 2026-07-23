@@ -430,7 +430,7 @@ packages:
       path: "../../packages/api-client-dart"
       relative: true
     source: path
-    version: "0.17.2"
+    version: "0.17.3"
   record_use:
     dependency: transitive
     description:

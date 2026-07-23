@@ -7,6 +7,8 @@ import 'package:rajawali_mobile/core/security/credential_store.dart';
 import 'package:rajawali_mobile/core/security/mobile_credentials.dart';
 import 'package:rajawali_mobile/features/auth/auth_screens.dart';
 import 'package:rajawali_mobile/features/auth/mobile_auth_controller.dart';
+import 'package:rajawali_mobile/features/fleet/fleet_models.dart';
+import 'package:rajawali_mobile/features/fleet/fleet_repository.dart';
 import 'package:rajawali_mobile/features/operations/operations_context.dart';
 import 'package:rajawali_mobile/features/operations/operations_context_repository.dart';
 
@@ -38,6 +40,8 @@ void main() {
     expect(harness.store.value?.mfaRequired, isFalse);
     expect(find.text('RKS / Warehouse Kresek'), findsOneWidget);
     expect(find.text('Driver Test'), findsOneWidget);
+    expect(find.text('B 1234 RKS'), findsWidgets);
+    expect(find.text('Delivery retail'), findsOneWidget);
     await tester.tap(find.byKey(const Key('sign-out')));
     await tester.pumpAndSettle();
 
@@ -77,6 +81,7 @@ void main() {
     expect(find.byKey(const Key('active-location')), findsOneWidget);
     expect(find.text('RWH / Warehouse Cakung'), findsOneWidget);
     expect(find.textContaining('Asia/Jakarta'), findsOneWidget);
+    expect(harness.fleetRepository.loadedLocations.last, 'location-2');
   });
 
   testWidgets('known login error is translated without exposing internals', (
@@ -138,12 +143,14 @@ final class AuthHarness {
   AuthHarness._(
     this.store,
     this.gateway,
+    this.fleetRepository,
     this.operationsRepository,
     this.controller,
   );
 
   final MemoryCredentialStore store;
   final WidgetAuthGateway gateway;
+  final WidgetFleetRepository fleetRepository;
   final WidgetOperationsRepository operationsRepository;
   final MobileAuthController controller;
 
@@ -152,12 +159,14 @@ final class AuthHarness {
   }) async {
     final store = MemoryCredentialStore(storedCredentials);
     final gateway = WidgetAuthGateway();
+    final fleetRepository = WidgetFleetRepository();
     final operationsRepository = WidgetOperationsRepository();
     final manager = MobileSessionManager(store, gateway);
     await manager.restore();
     return AuthHarness._(
       store,
       gateway,
+      fleetRepository,
       operationsRepository,
       MobileAuthController(manager),
     );
@@ -173,9 +182,71 @@ final class AuthHarness {
     home: MobileAuthFlow(
       controller: controller,
       environment: 'test',
+      fleetRepository: fleetRepository,
       operationsRepository: operationsRepository,
     ),
   );
+}
+
+final class WidgetFleetRepository implements FleetRepository {
+  final loadedLocations = <String>[];
+
+  @override
+  Future<FleetPage<FleetTrip>> loadActiveTrips(
+    FleetScope scope, {
+    required int page,
+  }) async {
+    return FleetPage(
+      data: [
+        FleetTrip(
+          id: 'trip-${scope.locationId}',
+          status: FleetTripStatus.active,
+          purpose: 'Delivery retail',
+          destination: 'Jakarta',
+          startOdometer: 12000,
+          departedAt: DateTime.utc(2026, 7, 23, 8),
+          vehicleId: 'vehicle-${scope.locationId}',
+          vehiclePlateNumber: 'B 1234 RKS',
+          driverId: 'user-1',
+          driverName: 'Driver Test',
+        ),
+      ],
+      currentPage: 1,
+      lastPage: 1,
+      total: 1,
+    );
+  }
+
+  @override
+  Future<FleetStatusCounts> loadStatusCounts(FleetScope scope) async {
+    return const FleetStatusCounts(available: 1, inUse: 1, maintenance: 0);
+  }
+
+  @override
+  Future<FleetPage<FleetVehicle>> loadVehicles(
+    FleetScope scope, {
+    required int page,
+  }) async {
+    loadedLocations.add(scope.locationId);
+    return FleetPage(
+      data: [
+        FleetVehicle(
+          id: 'vehicle-${scope.locationId}',
+          code: 'TRUCK-01',
+          plateNumber: 'B 1234 RKS',
+          brand: 'Isuzu',
+          model: 'Elf',
+          modelYear: 2025,
+          currentOdometer: 12000,
+          status: FleetVehicleStatus.available,
+          typeName: 'Light Truck',
+        ),
+      ],
+      currentPage: 1,
+      lastPage: 1,
+      total: 2,
+    );
+  }
 }
 
 final class WidgetOperationsRepository implements OperationsContextRepository {

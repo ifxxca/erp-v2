@@ -3816,6 +3816,7 @@ class DefaultApi {
   /// * [locationId]
   /// * [status]
   /// * [perPage]
+  /// * [page]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -3830,6 +3831,7 @@ class DefaultApi {
     required String locationId,
     WorkOrderStatus? status,
     int? perPage = 20,
+    int? page = 1,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -3859,6 +3861,7 @@ class DefaultApi {
     final _queryParameters = <String, dynamic>{
       if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(WorkOrderStatus)),
       if (perPage != null) r'per_page': encodeQueryParameter(_serializers, perPage, const FullType(int)),
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -4421,6 +4424,7 @@ class DefaultApi {
   /// * [locationId]
   /// * [status]
   /// * [perPage]
+  /// * [page]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -4435,6 +4439,7 @@ class DefaultApi {
     required String locationId,
     VehicleTripStatus? status,
     int? perPage = 20,
+    int? page = 1,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -4464,6 +4469,7 @@ class DefaultApi {
     final _queryParameters = <String, dynamic>{
       if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(VehicleTripStatus)),
       if (perPage != null) r'per_page': encodeQueryParameter(_serializers, perPage, const FullType(int)),
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -4598,6 +4604,7 @@ class DefaultApi {
   /// * [search]
   /// * [status]
   /// * [perPage]
+  /// * [page]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -4613,6 +4620,7 @@ class DefaultApi {
     String? search,
     VehicleStatus? status,
     int? perPage = 20,
+    int? page = 1,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -4643,6 +4651,7 @@ class DefaultApi {
       if (search != null) r'search': encodeQueryParameter(_serializers, search, const FullType(String)),
       if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(VehicleStatus)),
       if (perPage != null) r'per_page': encodeQueryParameter(_serializers, perPage, const FullType(int)),
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(

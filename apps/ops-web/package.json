@@ -15,7 +15,7 @@
     "@mantine/form": "^9.4.2",
     "@mantine/hooks": "^9.4.2",
     "@mantine/notifications": "^9.4.2",
-    "@rajawali/api-contract": "^0.17.2",
+    "@rajawali/api-contract": "^0.17.3",
     "@tabler/icons-react": "^3.45.0",
     "openapi-fetch": "^0.17.0",
     "react": "^19.2.7",

@@ -61,7 +61,7 @@ Status date: 2026-07-23
 - npm workspace plus shared API-contract and web-UI packages.
 - OpenAPI-generated TypeScript schemas shared by ERP and Operations Web, with committed output and CI drift detection.
 - OpenAPI-generated Dart/Dio package for Flutter with built-value models, bearer transport support, committed build-runner output, pinned containerized generation, and independent CI drift detection.
-- Flutter 3.44 Android/iOS application with validated environment configuration, responsive login/MFA, access-derived company/location Operations Context, capability projection, OS secure-storage credential blob, generated mobile-auth gateway, proactive/401 single-flight refresh, correlation headers, explicit mutation idempotency context, and isolated mobile CI.
+- Flutter 3.44 Android/iOS application with validated environment configuration, responsive login/MFA, access-derived company/location Operations Context, capability-aware read-only Fleet/active-trip dashboard, exact status totals, paginated loading, OS secure-storage credential blob, generated mobile-auth gateway, proactive/401 single-flight refresh, correlation headers, explicit mutation idempotency context, and isolated mobile CI.
 - ERP and Operations Web typed runtime clients for auth, identity governance, notifications, security/session management, Fleet, trips, checklist, maintenance, and file operations, with centralized bearer, idempotency, and correlated-error handling.
 - PostgreSQL 18, Redis 8, MinIO, ClamAV, queue worker, scheduler, and Mailpit local compose definition.
 - PHP 8.5 API development container definition.
@@ -96,7 +96,7 @@ Status date: 2026-07-23
 - Docker Compose configuration parsing.
 - OpenAPI TypeScript regeneration is deterministic, both web applications compile against shared schemas, and the npm dependency audit is clean.
 - Dart client generation is deterministic with OpenAPI Generator 7.22.0; dependency resolution, build-runner generation, and static analysis pass on Dart 3.12.2.
-- Flutter mobile authentication and Operations Context static analysis, 30 unit/widget tests, and native debug APK build pass on Flutter 3.44.0 / Dart 3.12.0.
+- Flutter mobile authentication, Operations Context, and read-only Fleet static analysis, 35 unit/widget tests, and native debug APK build pass on Flutter 3.44.0 / Dart 3.12.0.
 - ERP and Operations runtime-client tests verify MFA contracts, bearer/idempotency headers, typed path/query/body serialization, session identifier normalization, and correlated API error mapping.
 
 ## Container verification
@@ -107,6 +107,6 @@ Local Compose is verified with PostgreSQL 18, PHP 8.5 API, Redis, MinIO, ClamAV,
 
 - Production collector/dashboard/alert routing, telemetry retention/access policy, and distributed tracing integration.
 - Fleet documents, service due schedule, fuel/pickup events, route/geolocation, mandatory checklist-evidence policy, parts/inventory boundary, vendor billing, and maintenance approval workflow.
-- Production mobile Fleet screens, offline encrypted draft/command queue, push notifications, device-level integration tests, signing, and store/internal distribution.
+- Production mobile Fleet checkout/check-in/detail screens, offline encrypted draft/command queue, push notifications, device-level integration tests, signing, and store/internal distribution.
 
-The mobile token lifecycle, generated Dart transport, login/MFA, current-user and company/location context selection, capability-aware shell, secure storage, refresh coordinator, and request metadata adapters are implemented. Production deployment still requires Fleet data/action UI, approved offline conflict policy, signing, and end-to-end validation on physical devices.
+The mobile token lifecycle, generated Dart transport, login/MFA, current-user and company/location context selection, capability-aware read-only Fleet/trip data, secure storage, refresh coordinator, and request metadata adapters are implemented. Production deployment still requires Fleet action/detail UI, approved offline conflict policy, signing, and end-to-end validation on physical devices.

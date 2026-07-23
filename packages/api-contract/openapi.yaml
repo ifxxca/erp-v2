@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Rajawali Platform API
-  version: 0.17.2
+  version: 0.17.3
   description: Contract-first API shared by ERP Web, Operations Web, and mobile. Every API response returns X-Request-ID; authenticated business mutations may use Idempotency-Key for safe retry.
 x-request-controls:
   correlation:
@@ -1549,6 +1549,7 @@ paths:
         - { name: search, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { $ref: "#/components/schemas/VehicleStatus" } }
         - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
       responses:
         "200":
           description: Paginated vehicles.
@@ -1650,6 +1651,7 @@ paths:
       parameters:
         - { name: status, in: query, schema: { $ref: "#/components/schemas/VehicleTripStatus" } }
         - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
       responses:
         "200":
           description: Paginated vehicle trips.
@@ -1764,6 +1766,7 @@ paths:
       parameters:
         - { name: status, in: query, schema: { $ref: "#/components/schemas/WorkOrderStatus" } }
         - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
       responses:
         "200":
           description: Paginated work orders.
@@ -1878,6 +1881,13 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
     UserId:
       name: userId
       in: path

@@ -1,5 +1,5 @@
 name: rajawali_api_client
-version: 0.17.2
+version: 0.17.3
 description: Typed Dart client for Rajawali Platform V2 API
 homepage: homepage
 publish_to: none

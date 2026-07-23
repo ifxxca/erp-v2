@@ -8,7 +8,7 @@ Dokumen ini menetapkan fondasi contract untuk aplikasi Flutter. Aplikasi mobile 
 
 - `packages/api-contract/openapi.yaml` tetap menjadi satu-satunya sumber contract.
 - `packages/api-client-dart` adalah package `rajawali_api_client` dengan Dio, built-value models, bearer interceptor, dan unknown-enum fallback.
-- Package mencakup seluruh API `0.17.2`, termasuk login surface mobile, rotating refresh token, operations context, Fleet/trip/checklist, dan private-file lifecycle.
+- Package mencakup seluruh API `0.17.3`, termasuk login surface mobile, rotating refresh token, operations context, Fleet/trip/checklist, dan private-file lifecycle.
 - OpenAPI Generator `7.22.0`, Dart SDK `3.12.2`, dan build dependency lockfile dipin serta dijalankan melalui Docker.
 - Generated source dan output build-runner di-commit. CI meregenerasi package, menjalankan dependency resolution/build/static analysis, lalu menolak drift atau file generated baru yang belum di-commit.
 - `apps/mobile` menyediakan Flutter 3.44 Android/iOS shell, environment guard, secure credential blob, generated authentication gateway, single-flight token rotation, request correlation, serta explicit mutation context.
@@ -17,6 +17,7 @@ Dokumen ini menetapkan fondasi contract untuk aplikasi Flutter. Aplikasi mobile 
 - Authenticated shell mengambil `/me` dan `/operations/context` secara paralel, memetakan generated model ke application-domain model immutable, lalu memilih hanya legal entity/location yang diberikan server.
 - Operator dapat mengganti area kerja yang authorized, melihat capability Fleet/Trip/Maintenance, melakukan pull-to-refresh, serta retry menggunakan correlated request reference. Response `401` menghapus secure session dan kembali ke login.
 - Refresh response tidak meminta challenge ulang ketika token family sudah memiliki MFA assurance; rotated access token tetap mewarisi assurance family yang sama.
+- Read-only Fleet slice memuat exact total/available/in-use/maintenance counts, active trips sesuai driver/manager boundary server, dan vehicle pages melalui generated `page`/`per_page` parameters. Response site lama ditolak setelah operator mengganti workspace.
 
 Generated package adalah transport/model layer, bukan aplikasi dan bukan tempat business policy.
 

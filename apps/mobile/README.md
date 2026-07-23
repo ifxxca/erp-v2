@@ -12,6 +12,8 @@ Foundation yang sudah tersedia:
   application shell;
 - current-user dan access-derived company/location workspace dengan pemilihan
   area kerja serta capability projection;
+- read-only Fleet dashboard dengan exact vehicle status totals, active trips,
+  paginated vehicle list, dan stale-site response protection;
 - proactive dan 401-triggered single-flight refresh;
 - bearer injection, stable request ID saat retry, dan explicit idempotency context;
 - local-session removal ketika refresh replay ditolak atau logout dilakukan;

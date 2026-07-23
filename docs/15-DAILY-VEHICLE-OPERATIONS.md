@@ -88,8 +88,8 @@ Payload tidak bergantung pada HTML atau session browser. Generated Dart/Dio clie
 - PostgreSQL 18 menjalankan clean migration + seeder dan seluruh API suite: 126 test, 774 assertion, PHP 8.5.
 - Operations Web Mantine mempunyai tab operasional harian, upload evidence yang menunggu hasil scan, checklist checkout, check-in, dan manager cancellation.
 - Operations Web memanggil seluruh lifecycle melalui generated OpenAPI paths; compile-time typing mencakup path/query/body/response dan MFA memakai field `credential` yang sama dengan API.
-- OpenAPI `0.17.2` mendeskripsikan enam endpoint, schema trip/checklist, evidence attachment, capability context, dan pagination yang eksplisit.
-- Dart package `rajawali_api_client` version `0.17.2` berhasil menjalankan dependency resolution, build-runner, dan static analysis pada Dart 3.12.2.
+- OpenAPI `0.17.3` mendeskripsikan enam endpoint, schema trip/checklist, evidence attachment, capability context, serta `page`/`per_page` pagination yang eksplisit untuk generated clients.
+- Dart package `rajawali_api_client` version `0.17.3` berhasil menjalankan dependency resolution, build-runner, dan static analysis pada Dart 3.12.2.
 
 ## Deferred owner decisions
 

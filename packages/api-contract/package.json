@@ -1,7 +1,7 @@
 {
   "name": "@rajawali/api-contract",
   "private": true,
-  "version": "0.17.2",
+  "version": "0.17.3",
   "type": "module",
   "scripts": {
     "generate": "openapi-typescript openapi.yaml -o src/generated.ts",
